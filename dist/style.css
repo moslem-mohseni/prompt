@@ -636,3 +636,127 @@ textarea { overflow: hidden; }
 }
 .cc-links li a b { color: var(--ink); font-weight: 700; }
 
+/* ---------- هاب نمونه‌های طلایی و واقعی (غول پرامپت) ---------- */
+.golden-samples-hub {
+  background: linear-gradient(145deg, rgba(201, 162, 91, .09) 0%, rgba(20, 24, 30, .04) 100%);
+  border: 1px solid rgba(201, 162, 91, .28);
+  border-radius: var(--r);
+  padding: 16px 18px;
+  margin-bottom: 22px;
+  box-shadow: 0 4px 18px -6px rgba(201, 162, 91, .15);
+  position: relative;
+  overflow: hidden;
+}
+:root[data-theme="dark"] .golden-samples-hub {
+  background: linear-gradient(145deg, rgba(214, 179, 106, .09) 0%, rgba(10, 14, 20, .6) 100%);
+  border-color: rgba(214, 179, 106, .24);
+  box-shadow: 0 6px 24px -10px rgba(0, 0, 0, .6);
+}
+.gsh-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+.gsh-title-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.gsh-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--gold-soft);
+  color: var(--gold);
+  border: 1px solid rgba(201, 162, 91, .3);
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  width: fit-content;
+}
+.gsh-pill svg { width: 14px; height: 14px; }
+.gsh-title-box h4 {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+.gsh-title-box p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+.gsh-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+}
+.gsh-card {
+  display: flex;
+  flex-direction: column;
+  text-align: right;
+  background: var(--surface-solid);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  font-family: inherit;
+  color: inherit;
+}
+.gsh-card:hover {
+  border-color: var(--gold);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px -8px var(--glow-a);
+}
+.gsh-card.active {
+  border-color: var(--gold);
+  background: linear-gradient(135deg, var(--surface-solid) 0%, var(--gold-soft) 100%);
+  box-shadow: 0 0 0 1.5px var(--gold);
+}
+.gsh-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.gsh-card-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--gold);
+  background: var(--gold-soft);
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+.gsh-card-trigger {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--ink-3);
+  transition: color .15s ease;
+}
+.gsh-card:hover .gsh-card-trigger {
+  color: var(--gold);
+}
+.gsh-card-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 2px;
+}
+.gsh-card-role {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--gold);
+  margin-bottom: 3px;
+}
+.gsh-card-domain {
+  font-size: 0.72rem;
+  color: var(--ink-2);
+  line-height: 1.45;
+}
+

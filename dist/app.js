@@ -641,6 +641,71 @@
       : '<input id="' + id + '" type="text"' + (f.type === 'number' ? ' inputmode="decimal"' : '') + ' data-k="' + f.key + '" value="' + h(v) + '"' + ph + '>';
     return '<div class="field"><label for="' + id + '">' + h(f.label) + req + auto + brandActions + '</label>' + help + input + '</div>';
   }
+  // ---------- هاب نمونه‌های طلایی و واقعی (غول پرامپت) ----------
+  function goldenSamplesHubHtml(c) {
+    if (!c.fields || !c.fields.length) return '';
+    var exKeys = Object.keys(c.examples || {});
+    if (!exKeys.length && c.fields.some(function (f) { return f.profile; })) {
+      exKeys = ['reza', 'sara', 'mina'];
+    }
+    if (!exKeys.length) return '';
+
+    var personaMeta = {
+      reza: {
+        name: 'رضا',
+        role: 'فروشگاه دمنوش و ادویه',
+        domain: 'کسب‌وکار، محصول فیزیکی و کمپین فروش',
+        badge: 'کسب‌وکار',
+        icon: '☕'
+      },
+      sara: {
+        name: 'سارا',
+        role: 'کلینیک روان‌درمانی',
+        domain: 'خدمات تخصصی، سلامت و مراجعان',
+        badge: 'خدمات تخصصی',
+        icon: '🌱'
+      },
+      mina: {
+        name: 'مینا',
+        role: 'آکادمی آموزش و کوچینگ',
+        domain: 'آموزش، دانشگاه و کار تیمی',
+        badge: 'آموزش و B2B',
+        icon: '🎓'
+      }
+    };
+
+    var cardsHtml = exKeys.map(function (pk) {
+      var meta = personaMeta[pk] || {
+        name: pk,
+        role: 'سناریوی کاربردی آماده',
+        domain: 'نمونه‌ی واقعی کارگاه',
+        badge: 'سناریوی آماده',
+        icon: '⚡'
+      };
+      var isCurrent = S.activePersona === pk;
+      return '<button type="button" class="gsh-card' + (isCurrent ? ' active' : '') + '" data-act="load-sample" data-p="' + pk + '" title="بارگذاری کامل سناریوی پرجزئیات ' + h(meta.name) + '">' +
+        '<div class="gsh-card-head">' +
+        '  <span class="gsh-card-badge">' + meta.icon + ' ' + h(meta.badge) + '</span>' +
+        '  <span class="gsh-card-trigger">بارگذاری در فرم ↵</span>' +
+        '</div>' +
+        '<strong class="gsh-card-name">نمونه‌ی ' + h(meta.name) + '</strong>' +
+        '<span class="gsh-card-role">' + h(meta.role) + '</span>' +
+        '<span class="gsh-card-domain">' + h(meta.domain) + '</span>' +
+        '</button>';
+    }).join('');
+
+    return '<div class="golden-samples-hub">' +
+      '<div class="gsh-header">' +
+      '  <div class="gsh-title-box">' +
+      '    <div class="gsh-pill">' + ic('spark') + '<span>غول پرامپت‌های کارگاه</span></div>' +
+      '    <h4>نمونه‌های واقعی و آماده‌ی کپی (Power Prompts)</h4>' +
+      '    <p>با یک کلیک، تمام فیلدها با سناریوی کامل، جزئیات واقعی و قیدهای دقیق پر می‌شوند تا مدل بالاترین کیفیت خروجی را بدهد.</p>' +
+      '  </div>' +
+      '</div>' +
+      '<div class="gsh-grid">' + cardsHtml + '</div>' +
+      '</div>';
+  }
+
   function exampleOf(c) {
     var ps = Object.keys(c.examples || {});
     if (!ps.length && c.fields.some(function (f) { return f.profile; })) ps = ['reza'];
@@ -685,11 +750,11 @@
       guideHtml +
       '<div class="split">';
 
-    var ex = exampleOf(c);
+    var samplesHub = goldenSamplesHubHtml(c);
     html += '<section class="panel">' +
       brandHubHtml(c) +
+      samplesHub +
       '<div class="panel-head"><h2>متغیرها و فرم پرامپت</h2><div>' +
-      (ex ? '<button class="link-btn" data-act="example">پر کردن با نمونه</button>' : '') +
       '<button class="link-btn muted" data-act="clear">پاک کردن فرم</button></div></div>' +
       (c.fields.length ? c.fields.map(function (f) { return fieldHtml(c, f); }).join('') : '<p class="muted">این پرامپت متغیری ندارد و آماده‌ی کپی مستقیم است.</p>') +
       '</section>';
@@ -1178,10 +1243,33 @@
       return;
     }
 
+    if (act === 'load-sample') {
+      var pk = el.getAttribute('data-p');
+      var ex = (c.examples && c.examples[pk]) ? c.examples[pk] : {};
+      var per = (B.personas && B.personas[pk]) ? B.personas[pk].profile : {};
+      var v = {};
+      c.fields.forEach(function (f) {
+        if (has(ex, f.key)) {
+          v[f.key] = ex[f.key];
+        } else if (f.profile && has(per, f.profile)) {
+          v[f.key] = f.profile === 'voice_doc' ? voiceOf(per) : per[f.profile];
+        } else if (f.default !== undefined) {
+          v[f.key] = f.default;
+        }
+      });
+      S.vals[c.id] = v;
+      S.activePersona = pk;
+      persist();
+      viewPrompt(r);
+      var pName = (B.personas && B.personas[pk]) ? B.personas[pk].name : pk;
+      toast('⚡ سناریوی طلایی «' + pName + '» با موفقیت در فرم بارگذاری شد');
+      return;
+    }
+
     if (act === 'example') {
       var pk = exampleOf(c), per = B.personas[pk].profile, ex = c.examples[pk] || {}, v = {};
       c.fields.forEach(function (f) { if (has(ex, f.key)) v[f.key] = ex[f.key]; else if (f.profile && has(per, f.profile)) v[f.key] = f.profile === 'voice_doc' ? voiceOf(per) : per[f.profile]; });
-      S.vals[c.id] = v; persist(); viewPrompt(r); toast('نمونه‌ی ' + B.personas[pk].name + ' پر شد');
+      S.vals[c.id] = v; S.activePersona = pk; persist(); viewPrompt(r); toast('نمونه‌ی ' + B.personas[pk].name + ' پر شد');
       return;
     }
 
