@@ -50,9 +50,10 @@
 
   // ---------- ذخیره‌سازی ----------
   var KEY = 'pb.v2';
-  var S = { profile: {}, vals: {}, saved: [], theme: 'auto', fmt: 'text' };
+  var S = { profile: {}, vals: {}, saved: [], theme: 'auto', fmt: 'text', activePersona: null, brandInject: true };
   var storageOk = true;
   try { var raw = localStorage.getItem(KEY); if (raw) S = Object.assign(S, JSON.parse(raw)); } catch (e) { storageOk = false; }
+  if (S.brandInject === undefined) S.brandInject = true;
   var currentFmt = S.fmt || 'text';
   var saveT;
   function persist() {
@@ -66,17 +67,85 @@
     else document.documentElement.removeAttribute('data-theme');
   }
 
+  // ---------- حل هویت و لحن برند ----------
+  function getActiveProfile() {
+    if (S.activePersona && B && B.personas && B.personas[S.activePersona]) {
+      return B.personas[S.activePersona].profile;
+    }
+    return S.profile || {};
+  }
+  function getActivePersonaName() {
+    if (S.activePersona && B && B.personas && B.personas[S.activePersona]) {
+      return B.personas[S.activePersona].name + ' (' + B.personas[S.activePersona].desc + ')';
+    }
+    return 'برند من';
+  }
+  function cardHasVoice(c) {
+    if (!c) return false;
+    return /\{\{\s*voice\b|<voice>/i.test(c.template);
+  }
+  function injectBrandToText(rawText, c, fmt) {
+    if (!S.brandInject || cardHasVoice(c)) return rawText;
+    var prof = getActiveProfile();
+    var hasBrandInfo = Boolean(prof.role || prof.audience || prof.tone || prof.voice_doc || prof.voice_avoid || prof.voice_use);
+    if (!hasBrandInfo) return rawText;
+
+    var role = prof.role ? String(prof.role).trim() : '';
+    var aud = prof.audience ? String(prof.audience).trim() : '';
+    var tone = prof.tone ? String(prof.tone).trim() : '';
+    var avoid = prof.voice_avoid ? String(prof.voice_avoid).trim() : '';
+    var use = prof.voice_use ? String(prof.voice_use).trim() : '';
+
+    if (fmt === 'xml') {
+      var brandXml = '  <brand_voice>\n';
+      if (role) brandXml += '    <role>' + role + '</role>\n';
+      if (aud) brandXml += '    <audience>' + aud + '</audience>\n';
+      if (tone) brandXml += '    <tone>' + tone + '</tone>\n';
+      if (use) brandXml += '    <preferred_terms>' + use + '</preferred_terms>\n';
+      if (avoid) brandXml += '    <avoid_terms>' + avoid + '</avoid_terms>\n';
+      brandXml += '  </brand_voice>';
+
+      if (/<\/prompt>\s*$/.test(rawText)) {
+        return rawText.replace(/<\/prompt>\s*$/, '\n' + brandXml + '\n</prompt>');
+      }
+      return rawText + '\n\n' + brandXml;
+    }
+
+    if (fmt === 'markdown') {
+      var brandMd = '### هویت و لحن برند من (Brand Voice)\n';
+      if (role) brandMd += '- **نقش من:** ' + role + '\n';
+      if (aud) brandMd += '- **مخاطب هدف:** ' + aud + '\n';
+      if (tone) brandMd += '- **لحن کلام:** ' + tone + '\n';
+      if (use) brandMd += '- **واژه‌های مورد استفاده:** ' + use + '\n';
+      if (avoid) brandMd += '- **واژه‌های ممنوعه (خط‌قرمزها):** ' + avoid + '\n';
+      return rawText.trim() + '\n\n' + brandMd.trim();
+    }
+
+    // text format
+    var lines = ['', '[چارچوب و لحن برند من]:'];
+    if (role) lines.push('نقش من: ' + role);
+    if (aud) lines.push('مخاطب: ' + aud);
+    if (tone) lines.push('لحن صحبت: ' + tone);
+    if (use) lines.push('واژه‌های مورد استفاده: ' + use);
+    if (avoid) lines.push('واژه‌های ممنوعه: ' + avoid);
+    return rawText.trim() + '\n' + lines.join('\n');
+  }
+
   // ---------- مقدار فیلدها و ساختن پرامپت ----------
   function defaultOf(f) {
     if (f.default != null) return (f.type === 'multi' || f.type === 'repeat') ? [].concat(f.default) : String(f.default);
     return (f.type === 'multi' || f.type === 'repeat') ? [] : '';
   }
   function own(c) { return S.vals[c.id] || {}; }
-  function fromBrand(c, f) { return f.profile && !has(own(c), f.key) && !E.isEmpty(S.profile[f.profile]); }
+  function fromBrand(c, f) {
+    var prof = getActiveProfile();
+    return f.profile && !has(own(c), f.key) && !E.isEmpty(prof[f.profile]);
+  }
   function value(c, f) {
     var o = own(c);
     if (has(o, f.key)) return o[f.key];
-    if (f.profile && !E.isEmpty(S.profile[f.profile])) return S.profile[f.profile];
+    var prof = getActiveProfile();
+    if (f.profile && !E.isEmpty(prof[f.profile])) return prof[f.profile];
     return defaultOf(f);
   }
   function optLabel(f, v) { var o = (f.options || []).filter(function (x) { return x.value === v; })[0]; return o ? o.label : v; }
@@ -265,6 +334,275 @@
     box.innerHTML = html;
   }
 
+  // ---------- فرهنگ راهنمای کاربردی پرامپت‌ها ----------
+  var CARD_GUIDES = {
+    '03-01': {
+      use: 'سریع‌ترین و چابک‌ترین پرامپت برای کارهای روزمره: بازنویسی پیام به مشتری، عذرخواهی محترمانه، پاسخ به دایرکت یا ویرایش ایمیل کاری، بدون اینکه هوش مصنوعی پرگویی کند.',
+      output: 'یک پاسخ ۱ تا ۳ خطی کاملاً متمرکز، خوش‌لحن و بدون تعارفات اضافه، دقیقاً در قالبی که شما تعیین کرده‌اید.',
+      tip: 'همیشه یک قید منفی بگذارید! مثلاً: «بدون وعده‌ی زمان مشخص» یا «بدون تعارفات طولانی»؛ قید منفی دست مدل را برای پرگویی می‌بندد.'
+    },
+    '03-02': {
+      use: 'تبدیل متن‌های خشک و اداری به متنی گیرا و خواندنی، به طوری که مخاطب در همان سطر اول متوقف شود و تا پایان همراهی کند.',
+      output: 'متن بازنویسی‌شده در دو بخش: قلاب اولیه برنده و بدنه‌ی روان و منسجم با لحن انتخابی شما.',
+      tip: 'جملات طولانی را بشکنید و از مدل بخواهید کلمات ملموس و قابل‌تصور را جایگزین اصطلاحات انتزاعی کند.'
+    },
+    '03-03': {
+      use: 'فشرده‌سازی متن‌های طولانی و مقالات در سه سطح مختلف برای مرور سریع در موبایل یا جلسات کاری.',
+      output: 'خلاصه در سه لایه: یک جمله پیام اصلی، سه نکته‌ی محوری، و پاراگراف جمع‌بندی تصمیمات.',
+      tip: 'اگر تصمیم‌گیری خاصی مد نظر است، در بخش هدف بنویسید تا تلخیص روی همان زاویه متمرکز شود.'
+    },
+    '03-04': {
+      use: 'اصلاح متن‌های پیچیده، برطرف کردن ابهامات زبانی و روان‌سازی جملاتی که چندپهلو یا سخت‌خوان هستند.',
+      output: 'نسخه‌ی پیراسته و شفاف بدون تغییر در معنای اصلی، همراه با فهرست خطاهای برطرف‌شده در صورت تمایل.',
+      tip: 'از مدل بخواهید فعل‌های مجهول را به معلوم تبدیل کند تا فاعل هر کار کاملاً روشن باشد.'
+    },
+    '04-01': {
+      use: 'وقتی می‌خواهید امضای کلامی و سبک قلم خود را استخراج کنید تا هوش مصنوعی همیشه متونی شبیه به خودتان بنویسد.',
+      output: 'سند رسمی لحن برند شامل: لحن محوری، چرایی، واژه‌های پرکاربرد، واژه‌های ممنوعه، سقف کلمات و نمونه‌های اصیل.',
+      tip: '۳ نمونه از واقعی‌ترین و موفق‌ترین پیام‌ها یا پست‌های قبلی خود را قرار دهید تا هویت کلامی دقیق استخراج شود.'
+    },
+    '03-05': {
+      use: 'نگارش ایمیل‌های رسمی، نامه‌های اداری و مکاتبات حساس کاری که باید همزمان محترمانه، روشن و بدون چاپلوسی باشند.',
+      output: 'یک ایمیل تمیز شامل: موضوع مشخص، سلام و شروع مستقیم، اصل درخواست در ۲ بند، و پایان‌بندی روشن با اقدام بعدی.',
+      tip: 'از احوالپرسی‌های طولانی پرهیز کنید؛ مدیران و همکاران پیام‌هایی را که در ۳۰ ثانیه خوانده می‌شوند سریع‌تر پاسخ می‌دهند.'
+    },
+    '04-06': {
+      use: 'تغییر لحن یک متن موجود (مثلاً از رسمی به خودمانی، یا از تند به همدلانه) بدون تغییر اطلاعات و واقعیت‌ها.',
+      output: 'متن جدید با لحن بازآفرینی‌شده و یکنواخت، بدون هیچ‌گونه نشت لحن قبلی.',
+      tip: 'تغییر لحن نباید حقیقت یا داده‌ها را دگرگون کند؛ مشخص کنید کدام واقعیت‌ها باید بدون دستکاری باقی بمانند.'
+    },
+    '04-07': {
+      use: 'پاکسازی متن از خطاهای تایپی، تصحیح فاصله‌گذاری‌ها، نیم‌فاصله‌ها و نشانه‌گذاری طبق اصول نگارش فارسی.',
+      output: 'متن ویراسته با نیم‌فاصله‌های استاندارد، تنوین و علائم نگارشی دقیق، آماده‌ی انتشار چاپی یا دیجیتال.',
+      tip: 'به مدل تأکید کنید که ساختار جملات را دستکاری نکند و فقط پیرایش فنی و رسم‌الخطی انجام دهد.'
+    },
+    '06b-01': {
+      use: 'نوشتن کپشن برای پست‌های اینستاگرام که هم زمان مکث مخاطب را بالا ببرد و هم به فروش، کامنت یا پیام دایرکت ختم شود.',
+      output: '۳ نسخه کپشن کامل شامل: قلاب اول (هوک برای قبل از More)، بدنه‌ی کوتاه و ملموس، و دعوت به اقدام صریح (CTA).',
+      tip: 'قلاب اول را هرگز با سلام شروع نکنید! مستقیم از مسأله، کنجکاوی یا یک حس مشترک آغاز کنید.'
+    },
+    '06b-02': {
+      use: 'تبدیل یک ایده، آموزش یا تجربه به پست اسلایدی اینستاگرام و لینکدین که مخاطب را تا اسلاید آخر مشتاق نگه دارد.',
+      output: 'متن تفکیک‌شده برای ۵ تا ۸ اسلاید: اسلاید ۱ (کاور پرکشش)، اسلایدهای میانی (یک نکته در هر اسلاید)، و اسلاید آخر (سیو و ارسال).',
+      tip: 'در هر اسلاید فقط یک پیام بگذارید؛ شلوغ کردن اسلاید ورق زدن را متوقف می‌کند.'
+    },
+    '06b-03': {
+      use: 'برنامه‌ریزی محتوای یک هفته با توزیع متوازن پست‌های آموزشی، اعتمادساز، تعاملی و پیشنهادات فروش.',
+      output: 'جدول ۷ روزه با عنوان پست، قالب (ریلز، اسلاید، استوری)، پیام اصلی و اقدام مورد انتظار از مخاطب.',
+      tip: 'بیش از یک‌سوم محتوای هفته نباید فروش مستقیم باشد؛ ابتدا ارزش بدهید تا پیشنهاد فروش پذیرفته شود.'
+    },
+    '06b-04': {
+      use: 'سناریونویسی استوری‌های تعاملی ۲۴ ساعته برای گرم کردن مخاطب، نظرسنجی و سپس هدایت به محصول یا خدمت.',
+      output: 'زنجیره ۴ تا ۶ استوری پیوسته: استوری اول (قلاب بصری)، استوری تعامل (استیکر/کوییز)، استوری ارزش، و استوری تبدیل به اقدام.',
+      tip: 'در استوری اول لینک یا قیمت نگذارید؛ اول تعامل بگیرید تا استوری به افراد بیشتری نمایش داده شود.'
+    },
+    '06b-05': {
+      use: 'پاسخ حرفه‌ای به مشتریان ناراضی، کامنت‌های انتقادی یا پیام‌های تند دایرکت، بدون باختن آرامش و با حفظ اعتبار برند.',
+      output: 'پاسخ همدلانه در ۳ بخش: پذیرش حس مخاطب، توضیح شفاف بدون توجیه تراشی، و راهکار مشخص برای جبران یا پیگیری.',
+      tip: 'با مشتری خشمگین یکی‌به‌دو نکنید؛ احساسش را معتبر بشمارید و ادامه گفتگو را به پیام خصوصی هدایت کنید.'
+    },
+    '06a-09': {
+      use: 'ایده‌پردازی جملات افتتاحیه (قلاب‌ها) برای شروع ریلز، ویدیو یا متن‌های بازاریابی برای متوقف کردن انگشت مخاطب.',
+      output: '۱۰ ایده قلاب در دسته‌های متنوع: قلاب سوالی، اعترافی، آماری، خلاف‌عادت و داستانی.',
+      tip: 'بهترین قلاب‌ها باورهای غلط رایج را به چالش می‌کشند یا از یک اشتباه معمول پرده برمی‌دارند.'
+    },
+    '06a-01': {
+      use: 'تدوین بریف شفاف و متمرکز برای کمپین فروش، رونمایی محصول جدید یا رویداد فصلی.',
+      output: 'سند بریف کمپین شامل: پیام محوری، اهداف سنجش‌پذیر، پرسونای هدف، تقویم اجرایی و کانال‌های توزیع.',
+      tip: 'پیام محوری کمپین فقط باید یک چیز باشد؛ اگر چند پیام را همزمان بگویید، مخاطب هیچ‌کدام را به خاطر نمی‌سپارد.'
+    },
+    '06a-04': {
+      use: 'طراحی پیشنهادی که ارزش آن بسیار بالاتر از قیمت پرداختی باشد و مشتری دلیلی برای رد کردن آن پیدا نکند.',
+      output: 'بسته پیشنهاد شامل: پیشنهاد اصلی، هدایای جانبی مرتبط، رفع ریسک با ضمانت، و دلیل واقعی برای محدودیت زمان.',
+      tip: 'پیشنهاد رد‌نشدنی به معنی حراج یا تخفیف نیست؛ به معنی ترکیب هوشمندانه خدمات جانبی است که ارزش را چندبرابر می‌کنند.'
+    },
+    '06c-01': {
+      use: 'نگارش ساختار و متن صفحه فرود (Landing Page) برای معرفی یک محصول، خدمت یا وبینار با هدف ثبت‌نام یا خرید.',
+      output: 'متن کامل بخش‌های لندینگ: هیرو سکشن (تیتر + زیرتیتر + دکمه)، بخش درد و نیاز، معرفی راه‌حل، مزایا و اعتمادسازی.',
+      tip: 'در بخش هیرو در کمتر از ۵ ثانیه باید مشخص شود: این چیست، برای چه کسی است، و چه دردی را دوا می‌کند.'
+    },
+    '06c-03': {
+      use: 'نوشتن تیترهای متقاعدکننده و جذاب برای صفحات سایت، بنرهای تبلیغاتی و عنوان مقالات.',
+      output: 'مجموعه‌ای از تیترهای آزمایش‌شده در سبک‌های مختلف: نتیجه‌محور، کنجکاوی‌ساز، شفاف و راهنمایی.',
+      tip: 'تیتر باید وعده مشخصی بدهد؛ از تیترهای مبهم و شاعرانه برای صفحات فروش اجتناب کنید.'
+    },
+    '03-07': {
+      use: 'نقد بی‌رحمانه و سنجش تاب‌آوری یک ایده، محصول یا برنامه کاری قبل از صرف وقت و هزینه، توسط یک منتقد سخت‌گیر.',
+      output: 'گزارش ارزیابی موشکافانه شامل: ۵ ضعف پنهان، فرضیات اثبات‌نشده، ریسک‌های اجرایی و دلایلی که رقبا یا مشتریان شما را پس می‌زنند.',
+      tip: 'به نقدها به چشم دشمن نگاه نکنید؛ هر ضعفی که اینجا پیدا شود، یک بحران واقعی در بازار را خنثی می‌کند.'
+    },
+    '03-08': {
+      use: 'آزمایش متن تبلیغ، پیشنهاد قیمت یا صفحه محصول در برابر ذهنیت یک مخاطب شکاک، کم‌حوصله یا محافظه‌کار.',
+      output: 'واکنش سطر‌به‌سطر از چشم مخاطب: کجا شک کرد؟ کجا خسته شد؟ و چه سؤالی برایش بی‌جواب ماند؟',
+      tip: 'مخاطب را با جزییات توصیف کنید؛ مثلاً «مادری که نگران کیفیت محصول است و بودجه محدودی دارد».'
+    },
+    '03-11': {
+      use: 'کشف فرضیات پنهانی که پایه‌های تصمیم شما هستند اما شاید در واقعیت درست نباشند.',
+      output: 'فهرست پیش‌فرض‌های نادیده، سطح ریسک هر کدام، و یک آزمون سریع برای راستی‌آزمایی آن‌ها.',
+      tip: 'بسیاری از شکست‌های کاری از پیش‌فرض‌هایی ناشی می‌شوند که هیچ‌وقت آزموده نشده‌اند.'
+    },
+    '05b-01': {
+      use: 'تهیه چکیده مدیریتی از گزارش‌ها، فایل‌های متنی طولانی یا کتابچه‌ها برای تصمیم‌گیری در کمترین زمان.',
+      output: 'خلاصه ساختاریافته در یک صفحه: نکات محوری، آمار و ارقام مستند، تصمیمات متخذه، و گام‌های بعدی.',
+      tip: 'متن فایل را به پرامپت ضمیمه کنید و از مدل بخواهید فقط بر اساس فکت‌های درون متن بنویسد.'
+    },
+    '01-04': {
+      use: 'استخراج الگوها، نقاط قوت، افت‌های غیرمنتظره و فرصت‌های سودآوری از جدول اکسل یا داده‌های آماری.',
+      output: 'تحلیل آماری به زبان ساده، جدول مقایسه‌ای و ۳ پیشنهاد عملی برای رشد بر مبنای ارقام واقعی.',
+      tip: 'ستون‌های داده را معرفی کنید و بازه زمانی اعداد را صریحاً بنویسید.'
+    },
+    '04-03': {
+      use: 'طراحی دستورالعمل سیستم برای ساخت دستیار شخصی در Gemini (بخش Gems) یا ChatGPT (بخش Custom GPTs).',
+      output: 'متن استاندارد پرامپت سیستمی شامل: تعریف نقش، وظایف مجاز، لحن، خط‌قرمزها و قالب‌های خروجی مورد انتظار.',
+      tip: 'دستورالعمل سیستم را با سند لحن برند ترکیب کنید و در بخش Instructions دستیار قرار دهید.'
+    },
+    'G-01': {
+      use: 'دستورالعمل ساخت یک دستیار اختصاصی در اکانت هوش مصنوعی که وظیفه‌اش نقد شفاف نوشته‌های شما بدون هیچ تعارفی است.',
+      output: 'پرامپت سیستمی آماده برای وارد کردن در بخش ساخت Gem در گوگل جمینای.',
+      tip: 'هر متنی را قبل از ارسال به کارفرما یا انتشار عمومی، یک بار به این Gem بدهید تا ایرادهایش را بگوید.'
+    },
+    '03-16': {
+      use: 'تبدیل خواسته‌های خودمانی و پراکنده به یک پرامپت مهندسی‌شده، دقیق و اصولی برای رسیدن به بهترین جواب.',
+      output: 'یک پرامپت استاندارد چندبخشی شامل زمینه، خواسته، قیدها و قالب خروجی.',
+      tip: 'خواسته خود را با همان واژه‌های روزمره بنویسید؛ مدل جاهای خالی فنی را خودش تکمیل می‌کند.'
+    },
+    '02-01': {
+      use: 'جمع‌بندی یک چت طولانی که حافظه کاری‌اش پر شده و مدل دچار کندی یا فراموشی شده است.',
+      output: 'متن فشرده تحویل کار برای باز کردن چت نو و ادامه دادن بدون از دست رفتن دستاوردها.',
+      tip: 'این خلاصه را کپی کنید و در چت جدید بچسبانید تا با سرعت و دقت روز اول کار را ادامه دهید.'
+    }
+  };
+
+  var CATEGORY_HEURISTICS = {
+    write: {
+      use: 'برای نوشتن، بازنویسی و پیراستن متن‌های کاری و شخصی تا بیانی روان، جذاب و استاندارد پیدا کنند.',
+      output: 'متن بازنویسی‌شده یا تدوین‌شده متناسب با چارچوب، طول و لحن درخواستی شما.',
+      tip: 'واژه‌های غیرضروری را حذف کنید و به مدل بگویید منظور را با کوتاه‌ترین جملات ممکن بیان کند.'
+    },
+    social: {
+      use: 'برای برنامه‌ریزی، تولید محتوا و تعامل در پلتفرم‌های اینستاگرام، تلگرام، لینکدین و توییتر.',
+      output: 'متن آماده‌ی کپی برای انتشار در شبکه‌های اجتماعی همراه با قلاب اول و دعوت به اقدام.',
+      tip: 'پست را با لحن برند خودتان هماهنگ کنید و از کلیشه‌های ماشینی و بازاریابی زرد پرهیز نمایید.'
+    },
+    visual: {
+      use: 'برای خلق سناریوهای تصویری، پرامپت‌های تولید تصویر در ابزارهای هوش مصنوعی و طراحی بنر.',
+      output: 'توصیف دقیق جزییات بصری، سبک نورپردازی، پالت رنگ و ترکیب‌بندی مناسب ابزار تصویرساز.',
+      tip: 'رنگ‌های پالت برند خود را در پرامپت ذکر کنید تا تصاویر ساخته‌شده هویت بصری یکپارچه داشته باشند.'
+    },
+    campaign: {
+      use: 'برای طراحی استراتژی بازاریابی، خلق آفرها و برنامه‌ریزی فروش محصولات و خدمات.',
+      output: 'سند برنامه بازاریابی با اهداف مشخص، پیام‌های محوری و زمان‌بندی اقدام.',
+      tip: 'همیشه دغدغه‌ی مخاطب را بر منافع شخصی خود ترجیح دهید تا اعتماد به خرید شکل بگیرد.'
+    },
+    web: {
+      use: 'برای نوشتن متن بخش‌های مختلف سایت، صفحات فرود و پیام‌های تبدیل مخاطب به خریدار.',
+      output: 'متن ساختاریافته وب شامل تیترها، زیرتیترها، متن‌های توضیح و دکمه‌های اقدام (CTA).',
+      tip: 'صفحات وب باید به راحتی اسکن شوند؛ جملات را در بندهای حداکثر ۳ خطی بنویسید.'
+    },
+    files: {
+      use: 'برای استخراج نکات مهم، خلاصه کردن اسناد و آماده‌سازی اسلایدهای ارائه از روی فایل‌ها.',
+      output: 'گزارش فشرده و تفکیک‌شده از محتوای فایل با تکیه بر اطلاعات و ارقام مستند.',
+      tip: 'از مدل بخواهید صرفاً به فکت‌های موجود در فایل وفادار بماند و از افزودن حدسیات بپرهیزد.'
+    },
+    data: {
+      use: 'برای سازماندهی، کشف الگوها و تحلیل اعداد، آمارها و جداول اطلاعاتی.',
+      output: 'تحلیل شفاف عددی، نمایش نقاط قوت و ضعف و پیشنهادات اجرایی مستند.',
+      tip: 'سرستون‌ها و واحدهای اندازه‌گیری را به درستی مشخص کنید تا محاسبات بدون خطا انجام شوند.'
+    },
+    think: {
+      use: 'برای چالش کشیدن ایده‌ها، نقد تصمیمات و بازبینی سناریوهای کاری از دیدگاه‌های متفاوت.',
+      output: 'نقد تحلیلی، فهرست ریسک‌های احتمالی و پیشنهادات سازنده برای ارتقای تصمیم.',
+      tip: 'تعصب روی ایده‌ی اولیه را کنار بگذارید و نقدها را راهی برای ایمن‌سازی آینده بدانید.'
+    },
+    plan: {
+      use: 'برای سازماندهی جلسات کاری با هوش مصنوعی، نقشه‌برداری مراحل و مدیریت چت‌های چندمرحله‌ای.',
+      output: 'سند برنامه اقدام، ماتریس تقسیم وظایف یا چکیده تحویل کار برای ادامه.',
+      tip: 'چت‌های طولانی را به مراحل مشخص تقسیم کنید تا هوش مصنوعی دچار فراموشی نشود.'
+    },
+    learn: {
+      use: 'برای یادگیری عمیق مفاهیم جدید، پرسش‌گری تعاملی و تمرین مهارت‌ها با شیوه سقراطی.',
+      output: 'پاسخ‌های هدایت‌کننده، طرح سوالات گام‌به‌گام و بازخورد درباره میزان درک شما.',
+      tip: 'به جای خواستن جواب آماده، بخواهید مدل با سوال پرسیدن شما را به کشف پاسخ برساند.'
+    },
+    assistant: {
+      use: 'برای طراحی دستیارهای هوشمند اختصاصی (Gems/GPTs) و مهندسی سیستم پرامپت‌ها.',
+      output: 'دستورالعمل کامل رفتاری، بندهای دفاعی و وظایف یک دستیار برای نصب در اکانت.',
+      tip: 'بندهای دفاعی را همیشه در انتهای دستورالعمل بگذارید تا دستیار از چارچوب خارج نشود.'
+    },
+    addon: {
+      use: 'برای اضافه کردن ضوابط تکمیلی، محدودیت طول یا سبک خاص به پرامپت‌های دیگر.',
+      output: 'یک بند تکمیلی استاندارد برای چسباندن به انتهای هر پرامپت دلخواه.',
+      tip: 'افزودنی‌ها را با پرامپت‌های اصلی ترکیب کنید تا خروجی دقیقاً باب میل شما شکل بگیرد.'
+    }
+  };
+
+  function getCardGuidance(c) {
+    if (!c) return { use: '', output: '', tip: '' };
+    if (CARD_GUIDES[c.id]) return CARD_GUIDES[c.id];
+    var catH = CATEGORY_HEURISTICS[c.category] || CATEGORY_HEURISTICS.write;
+    var use = c.desc || catH.use;
+    if (use.length < 35) use = c.desc + ' · ' + catH.use;
+    return {
+      use: use,
+      output: catH.output,
+      tip: catH.tip
+    };
+  }
+
+  // ---------- هاب یکپارچه‌سازی برند من ----------
+  function brandHubHtml(c) {
+    var prof = getActiveProfile();
+    var hasInfo = Boolean(prof.role || prof.audience || prof.tone || prof.voice_doc || prof.voice_avoid || prof.voice_use);
+    var pName = getActivePersonaName();
+    var hasVoiceInTemplate = cardHasVoice(c);
+
+    var personasList = B.personas ? Object.keys(B.personas).filter(function (k) { return k !== '_note'; }) : [];
+    var switcher = '<div class="brand-persona-pills">' +
+      '<span class="bpp-label">لحن فعال:</span>' +
+      '<button type="button" class="bpp-btn' + (!S.activePersona ? ' active' : '') + '" data-act="switch-persona" data-p="" title="استفاده از اطلاعات برند خودتان">★ برند من</button>' +
+      personasList.map(function (k) {
+        var per = B.personas[k];
+        return '<button type="button" class="bpp-btn' + (S.activePersona === k ? ' active' : '') + '" data-act="switch-persona" data-p="' + k + '" title="' + h(per.desc) + '">' + h(per.name) + '</button>';
+      }).join('') +
+      '</div>';
+
+    if (hasInfo) {
+      var chips = '';
+      if (prof.role) chips += '<span class="bchip" title="نقش برند"><b>نقش:</b> ' + h(prof.role) + '</span>';
+      if (prof.tone) chips += '<span class="bchip" title="لحن برند"><b>لحن:</b> ' + h(prof.tone) + '</span>';
+      if (prof.audience) chips += '<span class="bchip bchip-wide" title="مخاطب برند"><b>مخاطب:</b> ' + h(prof.audience) + '</span>';
+
+      var toggleHtml = '';
+      if (!hasVoiceInTemplate) {
+        toggleHtml = '<label class="brand-inject-toggle">' +
+          '<input type="checkbox" data-act="toggle-brand-inject"' + (S.brandInject ? ' checked' : '') + '>' +
+          '<span>تزریق امضا و مشخصات برند به خروجی پرامپت</span>' +
+          '</label>';
+      } else {
+        toggleHtml = '<span class="brand-inject-note">' + ic('check') + 'سند لحن برند مستقیماً درون فیلد فرم و قالب پرامپت قرار گرفته است.</span>';
+      }
+
+      return '<div class="brand-hub brand-connected">' +
+        '<div class="brand-hub-top">' +
+        '  <div class="brand-hub-status">' + ic('diamond') + '<span>متصل به: <b>' + h(pName) + '</b></span></div>' +
+        '  <a class="link-btn small" href="#/brand">ویرایش برند من</a>' +
+        '</div>' +
+        '<div class="brand-chips">' + chips + '</div>' +
+        '<div class="brand-hub-bottom">' + toggleHtml + switcher + '</div>' +
+        '</div>';
+    }
+
+    // برند هنوز خالی است
+    return '<div class="brand-hub brand-empty">' +
+      '<div class="brand-hub-top">' +
+      '  <div class="brand-hub-status empty-status">' + ic('spark') + '<b>این پرامپت با اطلاعات برند شما شخصی‌سازی می‌شود</b></div>' +
+      '  <a class="btn btn-gold small" href="#/brand">تنظیم برند من</a>' +
+      '</div>' +
+      '<p class="brand-hub-desc">وقتی لحن و مخاطب خود را اضافه کنید، خروجی هوش مصنوعی از حالت کلیشه‌ای خارج می‌شود. برای دیدن تفاوت، یک نمونه از کارگاه را امتحان کنید:</p>' +
+      switcher +
+      '</div>';
+  }
+
   // ---------- صفحه‌ی پرامپت ----------
   function fieldHtml(c, f) {
     var v = value(c, f), id = 'f_' + f.key;
@@ -272,14 +610,23 @@
     var req = f.required ? '<span class="req" aria-label="ضروری">*</span>' : '';
     var help = f.help ? '<div class="help">' + h(f.help) + '</div>' : '';
     var ph = f.example ? ' placeholder="' + h('مثلاً ' + f.example) + '"' : '';
+
+    var brandActions = '';
+    if (f.profile) {
+      brandActions = '<div class="field-brand-actions">' +
+        '<button type="button" class="field-action-btn" data-act="reset-field-brand" data-k="' + f.key + '" data-p="' + f.profile + '" title="بازنشانی متن این فیلد به اصل متن موجود در برند من">بازنشانی به اصل برند</button>' +
+        '<button type="button" class="field-action-btn" data-act="save-field-brand" data-k="' + f.key + '" data-p="' + f.profile + '" title="ذخیره متن این فیلد در مشخصات برند من">ذخیره در برند من</button>' +
+        '</div>';
+    }
+
     if (f.type === 'select') {
-      return '<div class="field"><label for="' + id + '">' + h(f.label) + req + '</label>' + help + '<select id="' + id + '" data-k="' + f.key + '">' +
+      return '<div class="field"><label for="' + id + '">' + h(f.label) + req + auto + brandActions + '</label>' + help + '<select id="' + id + '" data-k="' + f.key + '">' +
         (f.default == null ? '<option value="">انتخاب کنید</option>' : '') +
         f.options.map(function (o) { return '<option value="' + h(o.value) + '"' + (o.value === v ? ' selected' : '') + '>' + h(o.label) + '</option>'; }).join('') + '</select></div>';
     }
     if (f.type === 'multi') {
       var arr = Array.isArray(v) ? v : [];
-      return '<div class="field"><span class="lbl">' + h(f.label) + req + '</span>' + help + '<div class="checks">' + f.options.map(function (o, i) {
+      return '<div class="field"><span class="lbl">' + h(f.label) + req + auto + brandActions + '</span>' + help + '<div class="checks">' + f.options.map(function (o, i) {
         return '<label class="check"><input type="checkbox" data-k="' + f.key + '" data-i="' + i + '"' + (arr.indexOf(o.value) >= 0 ? ' checked' : '') + '><span>' + h(o.label) + '</span></label>';
       }).join('') + '</div></div>';
     }
@@ -287,12 +634,12 @@
       var items = Array.isArray(v) ? v : (E.isEmpty(v) ? [] : [v]);
       var n = Math.max(f.count || 3, items.length), out = '';
       for (var i = 0; i < n; i++) out += '<textarea data-k="' + f.key + '" data-r="' + i + '" aria-label="' + h(f.label + ' ' + fa(i + 1)) + '" placeholder="' + h((f.item_label || 'مورد') + ' ' + fa(i + 1)) + '">' + h(items[i] || '') + '</textarea>';
-      return '<div class="field"><span class="lbl">' + h(f.label) + req + auto + '</span>' + help + '<div class="stack">' + out + '</div></div>';
+      return '<div class="field"><span class="lbl">' + h(f.label) + req + auto + brandActions + '</span>' + help + '<div class="stack">' + out + '</div></div>';
     }
     var input = f.type === 'textarea'
       ? '<textarea id="' + id + '" data-k="' + f.key + '"' + ph + '>' + h(v) + '</textarea>'
       : '<input id="' + id + '" type="text"' + (f.type === 'number' ? ' inputmode="decimal"' : '') + ' data-k="' + f.key + '" value="' + h(v) + '"' + ph + '>';
-    return '<div class="field"><label for="' + id + '">' + h(f.label) + req + auto + '</label>' + help + input + '</div>';
+    return '<div class="field"><label for="' + id + '">' + h(f.label) + req + auto + brandActions + '</label>' + help + input + '</div>';
   }
   function exampleOf(c) {
     var ps = Object.keys(c.examples || {});
@@ -311,17 +658,41 @@
     else if (c.privacy === 'yellow') tags += '<span class="tag amber">' + ic('shield') + 'داده‌ی کسب‌وکار: فقط حداقل لازم، نه در Arena</span>';
     else tags += '<span class="tag green">' + ic('shield') + 'داده‌ی عمومی (سبز)</span>';
 
+    var g = getCardGuidance(c);
+    var guideHtml = '<section class="prompt-guide-card">' +
+      '<div class="pg-head">' +
+      '  <div class="pg-title">' + ic('spark') + '<h3>راهنمای کاربردی این پرامپت</h3></div>' +
+      '  <span class="pg-badge">شفاف‌سازی و راهنما</span>' +
+      '</div>' +
+      '<div class="pg-grid">' +
+      '  <div class="pg-item">' +
+      '    <div class="pg-label">🎯 این پرامپت برای چیست و کی استفاده کنیم؟</div>' +
+      '    <div class="pg-text">' + h(g.use) + '</div>' +
+      '  </div>' +
+      '  <div class="pg-item">' +
+      '    <div class="pg-label">📦 هوش مصنوعی دقیقاً چه تحویلی می‌دهد؟</div>' +
+      '    <div class="pg-text">' + h(g.output) + '</div>' +
+      '  </div>' +
+      '  <div class="pg-item">' +
+      '    <div class="pg-label">💡 راز نتیجه‌ی عالی (نکته‌ی طلایی کارگاه)</div>' +
+      '    <div class="pg-text">' + h(g.tip) + '</div>' +
+      '  </div>' +
+      '</div></section>';
+
     var html = '<a class="back" href="#/">' + ic('back') + 'همه‌ی پرامپت‌ها</a>' +
       '<div class="phead"><div class="phead-title"><h1>' + h(c.title) + '</h1><span class="phead-id">' + fa(c.id) + '</span></div>' +
-      '<p>' + h(c.desc) + '</p><div class="tags">' + tags + '</div></div><div class="split">';
+      '<p>' + h(c.desc) + '</p><div class="tags">' + tags + '</div></div>' +
+      guideHtml +
+      '<div class="split">';
 
-    if (c.fields.length) {
-      var ex = exampleOf(c);
-      html += '<section class="panel"><div class="panel-head"><h2>متغیرها و فرم پرامپت</h2><div>' +
-        (ex ? '<button class="link-btn" data-act="example">پر کردن با نمونه</button>' : '') +
-        '<button class="link-btn muted" data-act="clear">پاک کردن فرم</button></div></div>' +
-        c.fields.map(function (f) { return fieldHtml(c, f); }).join('') + '</section>';
-    }
+    var ex = exampleOf(c);
+    html += '<section class="panel">' +
+      brandHubHtml(c) +
+      '<div class="panel-head"><h2>متغیرها و فرم پرامپت</h2><div>' +
+      (ex ? '<button class="link-btn" data-act="example">پر کردن با نمونه</button>' : '') +
+      '<button class="link-btn muted" data-act="clear">پاک کردن فرم</button></div></div>' +
+      (c.fields.length ? c.fields.map(function (f) { return fieldHtml(c, f); }).join('') : '<p class="muted">این پرامپت متغیری ندارد و آماده‌ی کپی مستقیم است.</p>') +
+      '</section>';
 
     html += '<section class="pv"><div class="paper">' +
       '<div class="paper-head">' +
@@ -362,9 +733,12 @@
   function refresh(c) {
     var p = build(c, true);
     var formattedDisplay = E.formatPrompt(p.text, c, currentFmt);
+    formattedDisplay = injectBrandToText(formattedDisplay, c, currentFmt);
     $('#pv').innerHTML = linesHtml(formattedDisplay);
+
     var clean = build(c, false).text;
     var cleanFormatted = E.formatPrompt(clean, c, currentFmt);
+    cleanFormatted = injectBrandToText(cleanFormatted, c, currentFmt);
     var wc = cleanFormatted.split(/\s+/).filter(Boolean).length;
     $('#wc').textContent = fa(wc) + ' واژه';
     $('#miss').textContent = p.missing.length ? 'هنوز خالی: ' + p.missing.join('، ') : '';
@@ -500,73 +874,122 @@
     }
   }
 
-  // ---------- راهنما ----------
+  // ---------- راهنما و قطب‌نما ----------
   var guideDemoFmt = 'text';
   function viewGuide() {
-    document.title = 'راهنما · بانک پرامپت';
-    var c = byId['06b-01'];
-    var ex = c.examples.reza;
-    var before = S.vals[c.id], beforeProfile = S.profile;
-    S.vals[c.id] = ex;
-    S.profile = JSON.parse(JSON.stringify(B.personas.reza.profile));
-    composeBrand();
-    var outRaw = build(c, false).text;
-    S.profile = beforeProfile;
-    if (before === undefined) delete S.vals[c.id]; else S.vals[c.id] = before;
+    document.title = 'راهنما و قطب‌نما · بانک پرامپت';
+    var total = B.cards.length;
 
-    var outFormatted = E.formatPrompt(outRaw, c, guideDemoFmt);
+    var html = '<section class="hero"><div class="eyebrow">راهنمای کاربردی و قطب‌نمای کارگاه</div>' +
+      '<h1>راهنمای انتخاب پرامپت<br><em>و معجزه‌ی ترکیب با برند من</em></h1>' +
+      '<p>چطور پرامپت متناسب با نیازتان را در چند ثانیه پیدا کنید و با افزودن هویت برند، خروجی‌های ملموس و بدون کلیشه بگیرید.</p></section>' +
 
-    var kv = c.fields.filter(function (f) { return has(ex, f.key); }).map(function (f) {
-      var v = ex[f.key]; if (f.type === 'select') v = optLabel(f, v); if (f.type === 'number') v = fa(v);
-      return '<div><dt>' + h(f.label) + '</dt><dd>' + h(v) + '</dd></div>';
-    }).join('');
-
-    main.innerHTML = '<section class="hero"><div class="eyebrow">راهنمای کاربردی کارگاه</div>' +
-      '<h1>در سه قدم ساده،<br><em>پرامپت حرفه‌ای و دقیق بسازید.</em></h1>' +
-      '<p>لازم نیست پرامپت‌های طولانی و پیچیده حفظ کنید؛ ساختار آماده است و شما فقط متغیرها را پر می‌کنید.</p></section>' +
-      '<div class="steps">' +
-      '<div class="panel step"><div class="num">۱</div><h3>پیدا کنید</h3><p>با جست‌وجو یا از میان ۱۲ دسته، پرامپت متناسب با نیاز خودتان را انتخاب کنید.</p></div>' +
-      '<div class="panel step"><div class="num">۲</div><h3>فرم را پر کنید</h3><p>چند فیلد کوتاه را پر کنید. خروجی در همان لحظه در سه قالب استاندارد آماده می‌شود.</p></div>' +
-      '<div class="panel step"><div class="num">۳</div><h3>کپی و استفاده</h3><p>قالب دلخواه (متن، مارکداون یا XML) را با یک کلیک کپی کنید و در چت بچسبانید.</p></div></div>' +
-
-      '<div class="section-head"><span class="ico">' + ic('spark') + '</span><h2>نمونه‌ی واقعی: کپشن اینستاگرام (کیس رضا)</h2></div>' +
-      '<div class="demo"><div class="panel"><div class="panel-head"><h2>آنچه در فرم وارد شد</h2></div><dl class="kv">' + kv + '</dl>' +
-      '<p class="note">سند لحن رضا از بخش «برند من» خودکار در پرامپت قرار گرفت.</p></div>' +
-
-      '<div class="paper">' +
-      '<div class="paper-head">' +
-      '  <div class="format-tabs" role="tablist" aria-label="قالب نمونه">' +
-      '    <button class="format-tab' + (guideDemoFmt === 'text' ? ' active' : '') + '" data-act="guide-fmt" data-fmt="text" role="tab">' + ic('text') + 'متن پرامپت</button>' +
-      '    <button class="format-tab' + (guideDemoFmt === 'markdown' ? ' active' : '') + '" data-act="guide-fmt" data-fmt="markdown" role="tab">' + ic('markdown') + 'مارکداون (Markdown)</button>' +
-      '    <button class="format-tab' + (guideDemoFmt === 'xml' ? ' active' : '') + '" data-act="guide-fmt" data-fmt="xml" role="tab">' + ic('code') + 'ساختاریافته (XML)</button>' +
+      '<div class="section-head"><span class="ico">' + ic('spark') + '</span><h2>معجزه‌ی ترکیب برند با پرامپت: مقایسه دو جهان</h2></div>' +
+      '<div class="before-after-grid">' +
+      '  <div class="panel ba-card ba-before">' +
+      '    <div class="ba-badge red">جهان ۱: پرامپت خام بدون برند (ماشینی و کلیشه‌ای)</div>' +
+      '    <p class="ba-desc">وقتی بدون سند لحن و بدون معرفی مخاطب پرامپت می‌دهید، هوش مصنوعی از عبارات زرد و غیرواقعی استفاده می‌کند:</p>' +
+      '    <div class="ba-quote">«سلام خدمت همراهان گرامی! آیا به دنبال یک فرصت استثنایی و یک محصول بی‌نظیر هستید؟ کیفیت اتفاقی نیست! همین حالا عدد ۱ را دایرکت بفرستید تا شگفت‌زده شوید...»</div>' +
+      '    <div class="ba-foot red">✗ نتیجه: مخاطب حس تبلیغ فیک می‌کند و اعتماد شکل نمی‌گیرد.</div>' +
       '  </div>' +
-      '  <span class="paper-meta"><span class="wc-badge">' + fa(outFormatted.split(/\s+/).filter(Boolean).length) + ' واژه</span></span>' +
+      '  <div class="panel ba-card ba-after">' +
+      '    <div class="ba-badge green">جهان ۲: پرامپت ترکیب‌شده با برند من (اصیل و انسانی)</div>' +
+      '    <p class="ba-desc">وقتی مشخصات «برند من» (رضا - دمنوش) تزریق می‌شود، خروجی آرام، صادقانه و دلنشین است:</p>' +
+      '    <div class="ba-quote">«دمنوش به‌لیموی ما را ساعت ده شب دم کنید. بوی لیمو که بلند شد، گوشی را کنار بگذارید. همین. بسته‌ی هدیه‌ی یلدا آماده‌ی سفارش در لینک بیو است.»</div>' +
+      '    <div class="ba-foot green">✓ نتیجه: صمیمیت، اعتبار، و فروش بدون تحمیل و اصرار.</div>' +
+      '  </div>' +
       '</div>' +
-      '<div class="prompt" id="guide_pv">' + linesHtml(outFormatted) + '</div>' +
-      '<div class="actions" style="margin-top:16px;"><a class="btn btn-gold" href="#/p/06b-01">' + ic('pen') + 'خودتان این پرامپت را باز کنید</a></div></div></div>' +
+
+      '<div class="section-head"><span class="ico">' + ic('route') + '</span><h2>قطب‌نمای انتخاب پرامپت (دنبال چه کاری هستید؟)</h2></div>' +
+      '<div class="compass-grid">' +
+      '  <div class="panel compass-card">' +
+      '    <div class="cc-head"><span class="ico">' + ic('chat') + '</span><h3>۱. محتوا و شبکه‌های اجتماعی</h3></div>' +
+      '    <p>برای جذب مخاطب، توقف اسکرول و تعامل مداوم در اینستاگرام، تلگرام و توییتر.</p>' +
+      '    <ul class="cc-links">' +
+      '      <li><a href="#/p/06b-01"><b>کپشن اینستاگرام</b> · قلاب، بدنه کوتاه و دعوت به اقدام</a></li>' +
+      '      <li><a href="#/p/06b-02"><b>اسلایدهای کاروسل</b> · آموزش ورق‌زدنی تک‌نکته‌ای</a></li>' +
+      '      <li><a href="#/p/06b-04"><b>استوری‌های تعاملی</b> · سناریوی نظرسنجی و فروش</a></li>' +
+      '      <li><a href="#/p/06a-09"><b>ایده‌های قلاب جذاب</b> · ۱۰ زاویه برای شروع ویدیو و متن</a></li>' +
+      '    </ul>' +
+      '  </div>' +
+      '  <div class="panel compass-card">' +
+      '    <div class="cc-head"><span class="ico">' + ic('pen') + '</span><h3>۲. نوشتن، ویرایش و نامه‌نگاری</h3></div>' +
+      '    <p>برای پیام‌های تمیز کاری، دایرکت‌های حساس و استخراج سبک شخصی قلم.</p>' +
+      '    <ul class="cc-links">' +
+      '      <li><a href="#/p/03-01"><b>پرامپت یک‌جمله‌ای</b> · فرمول ۳ جزئی برای پیام و بازنویسی</a></li>' +
+      '      <li><a href="#/p/04-01"><b>استخراج سند لحن</b> · تبدیل نمونه متن‌ها به امضای کلامی</a></li>' +
+      '      <li><a href="#/p/03-05"><b>ایمیل و پیام اداری</b> · محترمانه، بدون چاپلوسی و شفاف</a></li>' +
+      '      <li><a href="#/p/04-06"><b>تغییر لحن متن</b> · جابجایی لحن رسمی و صمیمی بدون تحریف</a></li>' +
+      '    </ul>' +
+      '  </div>' +
+      '  <div class="panel compass-card">' +
+      '    <div class="cc-head"><span class="ico">' + ic('target') + '</span><h3>۳. فروش، لندینگ و بازاریابی</h3></div>' +
+      '    <p>برای طراحی کمپین‌ها، پیشنهادات وسوسه‌انگیز و صفحات فرود با نرخ تبدیل بالا.</p>' +
+      '    <ul class="cc-links">' +
+      '      <li><a href="#/p/06a-01"><b>بریف کامل کمپین</b> · پیام محوری و اهداف اجرایی</a></li>' +
+      '      <li><a href="#/p/06a-04"><b>پیشنهاد رد‌نشدنی</b> · بسته‌بندی ارزش، بونوس و ضمانت</a></li>' +
+      '      <li><a href="#/p/06c-01"><b>صفحه فرود (لندینگ)</b> · متن تبدیل غریبه به خریدار</a></li>' +
+      '      <li><a href="#/p/06c-03"><b>تیترنویسی وب</b> · تیترهای کنجکاوی‌ساز و ارزش‌محور</a></li>' +
+      '    </ul>' +
+      '  </div>' +
+      '  <div class="panel compass-card">' +
+      '    <div class="cc-head"><span class="ico">' + ic('spark') + '</span><h3>۴. فکر، نقد و چکش‌کاری ایده</h3></div>' +
+      '    <p>برای ارزیابی موشکافانه طرح‌ها قبل از صرف وقت، انرژی و سرمایه.</p>' +
+      '    <ul class="cc-links">' +
+      '      <li><a href="#/p/03-07"><b>وکیل‌مدافع شیطان</b> · کشف ۵ نقطه ضعف مرگبار ایده</a></li>' +
+      '      <li><a href="#/p/03-08"><b>شبیه‌ساز مخاطب</b> · تست بازخورد مشتری شکاک و محافظه‌کار</a></li>' +
+      '      <li><a href="#/p/03-11"><b>نقد پیش‌فرض‌ها</b> · پیدا کردن مفروضات پنهان غلط</a></li>' +
+      '      <li><a href="#/p/03-16"><b>پرامپت‌ساز</b> · تبدیل درخواست خام به پرامپت مهندسی‌شده</a></li>' +
+      '    </ul>' +
+      '  </div>' +
+      '  <div class="panel compass-card">' +
+      '    <div class="cc-head"><span class="ico">' + ic('file') + '</span><h3>۵. فایل‌ها، داده‌ها و ارائه‌ها</h3></div>' +
+      '    <p>برای خلاصه کردن سریع اسناد قطور و ساختاربندی داده‌های اکسل و اسلاید.</p>' +
+      '    <ul class="cc-links">' +
+      '      <li><a href="#/p/05b-01"><b>خلاصه‌ی اجرایی سند</b> · عصاره‌ی ۱ صفحه‌ای از گزارش‌های طولانی</a></li>' +
+      '      <li><a href="#/p/05b-07"><b>متن اسلایدهای ارائه</b> · تیتر، نکته و یادداشت سخنران</a></li>' +
+      '      <li><a href="#/p/01-04"><b>تحلیل جدول داده</b> · کشف الگوها و فرصت‌ها از اکسل</a></li>' +
+      '      <li><a href="#/p/02-01"><b>خلاصه‌ی تحویل چت</b> · فشرده‌سازی چت و انتقال به چت نو</a></li>' +
+      '    </ul>' +
+      '  </div>' +
+      '  <div class="panel compass-card">' +
+      '    <div class="cc-head"><span class="ico">' + ic('bot') + '</span><h3>۶. ساخت دستیار هوشمند و Gem</h3></div>' +
+      '    <p>برای طراحی ایجنت‌های دائمی در Gemini و ChatGPT با قوانین رفتاری پایدار.</p>' +
+      '    <ul class="cc-links">' +
+      '      <li><a href="#/p/04-03"><b>دستورالعمل سیستم Gem</b> · پرامپت ریشه برای ساخت دستیار</a></li>' +
+      '      <li><a href="#/p/G-01"><b>Gem منتقد بی‌تعارف</b> · دستیار غربالگری و بهبود متن</a></li>' +
+      '      <li><a href="#/p/04-05"><b>دستورالعمل ChatGPT</b> · تنظیمات پایدار برای همه چت‌ها</a></li>' +
+      '      <li><a href="#/p/07c-01"><b>بندهای دفاعی دستیار</b> · جلوگیری از هک و خروج از دستور</a></li>' +
+      '    </ul>' +
+      '  </div>' +
+      '</div>' +
 
       '<div class="section-head"><span class="ico">' + ic('code') + '</span><h2>راهنمای انتخاب قالب کپی</h2></div>' +
       '<div class="format-guide-grid">' +
       '  <div class="panel format-card">' +
       '    <div class="fc-head"><span class="ico">' + ic('text') + '</span><h3>متن پرامپت (ساده)</h3></div>' +
-      '    <p><b>کی استفاده کنیم؟</b> برای پیام‌های سریع، کپشن‌ها، استوری‌ها و کارهای روزمره (سطح ۱ و ۲ نردبان پرامپت). روی گوشی سریع‌ترین گزینه است.</p>' +
+      '    <p><b>کی استفاده کنیم؟</b> برای پیام‌های سریع، کپشن‌ها، استوری‌ها و کارهای روزمره. روی گوشی سریع‌ترین گزینه است و مستقیماً در هر کادری پیست می‌شود.</p>' +
       '  </div>' +
       '  <div class="panel format-card">' +
       '    <div class="fc-head"><span class="ico">' + ic('markdown') + '</span><h3>فرمت مارکداون (Markdown)</h3></div>' +
-      '    <p><b>کی استفاده کنیم؟</b> برای بریف‌های کاری، پروپوزال‌ها، متون چندبخشی و اسنادی که انسان و مدل هر دو باید آن را به‌صورت خوانا مرور کنند.</p>' +
+      '    <p><b>کی استفاده کنیم؟</b> برای بریف‌های کاری، پروپوزال‌ها، متون چندبخشی و اسنادی که انسان و مدل هر دو باید آن را به‌صورت تمیز و بخش‌بندی‌شده بخوانند.</p>' +
       '  </div>' +
       '  <div class="panel format-card">' +
       '    <div class="fc-head"><span class="ico">' + ic('code') + '</span><h3>فرمت ساختاریافته (XML)</h3></div>' +
-      '    <p><b>کی استفاده کنیم؟</b> برای داده‌های طولانی، تفکیک دقیق دستور از داده، ساخت Gem یا Project در Claude/Gemini تا مدل ورودی را با دستور اشتباه نگیرد.</p>' +
+      '    <p><b>کی استفاده کنیم؟</b> برای داده‌های طولانی، تفکیک دقیق دستور از داده، ساخت Gem یا Project تا مدل متن ورودی را با دستور اصلی اشتباه نگیرد.</p>' +
       '  </div>' +
       '</div>' +
 
+      '<div class="section-head"><span class="ico">' + ic('spark') + '</span><h2>۵ قانون طلایی کارگاه برای خروجی بی‌نقص</h2></div>' +
       '<div class="tips">' +
-      '<div class="panel tip">' + ic('diamond') + '<p><b>برند من</b> را یک بار بنویسید؛ مخاطب، لحن، سند لحن و رنگ‌هایتان در پرامپت‌های مرتبط به‌طور خودکار می‌نشیند و برچسب «از برند من» می‌گیرد.</p></div>' +
-      '<div class="panel tip">' + ic('save') + '<p><b>ذخیره‌ها</b> متن شخصی‌سازی‌شده را روی حافظه‌ی همین دستگاه نگه می‌دارد تا دفعه‌های بعد فقط با یک لمس کپی یا ویرایش کنید.</p></div>' +
-      '<div class="panel tip">' + ic('grid') + '<p><b>نصب روی گوشی:</b> از منوی مرورگر گوشی گزینه‌ی «افزودن به صفحه‌ی اصلی» (Add to Home Screen) را بزنید تا بانک بدون اینترنت و مثل یک اپلیکیشن سریع باز شود.</p></div>' +
-      '<div class="panel tip">' + ic('shield') + '<p>پرامپت‌هایی که برچسب <b>حساس (قرمز)</b> دارند را فقط با متن ناشناس‌شده و در چت موقت استفاده کنید. هیچ داده‌ای از این برنامه به سرور ارسال نمی‌شود.</p></div>' +
+      '<div class="panel tip">' + ic('diamond') + '<p><b>۱. همیشه برند من را متصل نگه دارید:</b> تفاوت هوش مصنوعی آماتور با حرفه‌ای در همین است؛ بدون برند، مدل جملات کلیشه‌ای و زرد می‌نویسد؛ با برند، دقیقاً زبان کسب‌وکار شما را صحبت می‌کند.</p></div>' +
+      '<div class="panel tip">' + ic('target') + '<p><b>۲. قید منفی بگذارید:</b> مدل‌ها عاشق پرگویی هستند! با گفتن «بدون اصطلاحات تخصصی»، «حداکثر ۴۰ کلمه» یا «بدون سلام و احوالپرسی» جلوی اضافه‌گویی را بگیرید.</p></div>' +
+      '<div class="panel tip">' + ic('route') + '<p><b>۳. چت‌ها را سبک نگه دارید:</b> وقتی پروژه‌ای طولانی شد، با پرامپت ۰۲-۰۱ خلاصه تحویل بگیرید و کار را در یک چت تازه ادامه دهید تا حافظه مدل کند نشود.</p></div>' +
+      '<div class="panel tip">' + ic('save') + '<p><b>۴. پرامپت‌های برنده را ذخیره کنید:</b> هر فرمی که پر کردید و خروجی عالی داد را با دکمه‌ی «ذخیره در این دستگاه» نگه دارید تا دفعه بعد در ۵ ثانیه آماده باشد.</p></div>' +
+      '<div class="panel tip">' + ic('shield') + '<p><b>۵. اطلاعات حساس را ماسک کنید:</b> پرامپت‌های قرمز را هرگز با نام مشتری یا اطلاعات بانکی پر نکنید و همیشه از چت موقت (Temporary Chat) استفاده نمایید.</p></div>' +
       '</div>';
+
+    main.innerHTML = html + footHtml();
   }
 
   // ---------- رویدادها ----------
@@ -614,10 +1037,68 @@
       return;
     }
 
+    if (act === 'toggle-brand-inject') {
+      S.brandInject = el.checked;
+      persist();
+      if (c) refresh(c);
+      return;
+    }
+
+    if (act === 'switch-persona') {
+      var targetP = el.getAttribute('data-p') || null;
+      S.activePersona = targetP;
+      persist();
+      if (c) {
+        c.fields.forEach(function (f) {
+          if (f.profile) {
+            var prof = getActiveProfile();
+            if (prof[f.profile] !== undefined) {
+              var o = own(c);
+              o[f.key] = f.profile === 'voice_doc' ? (prof.voice_doc || '') : (prof[f.profile] || '');
+            }
+          }
+        });
+        viewPrompt(r);
+        var pDisplayName = targetP && B.personas && B.personas[targetP] ? B.personas[targetP].name : 'برند من';
+        toast('لحن به «' + pDisplayName + '» تغییر یافت');
+      }
+      return;
+    }
+
+    if (act === 'reset-field-brand') {
+      var k = el.getAttribute('data-k');
+      var profKey = el.getAttribute('data-p');
+      var prof = getActiveProfile();
+      var o = own(c);
+      o[k] = profKey === 'voice_doc' ? (prof.voice_doc || '') : (prof[profKey] || '');
+      persist();
+      viewPrompt(r);
+      toast('فیلد با متن برند بازنشانی شد');
+      return;
+    }
+
+    if (act === 'save-field-brand') {
+      var k = el.getAttribute('data-k');
+      var profKey = el.getAttribute('data-p');
+      var f = c.fields.find(function (x) { return x.key === k; });
+      var curVal = value(c, f);
+      if (S.activePersona && B.personas && B.personas[S.activePersona]) {
+        B.personas[S.activePersona].profile[profKey] = curVal;
+      } else {
+        S.profile[profKey] = curVal;
+      }
+      composeBrand();
+      persist();
+      viewPrompt(r);
+      toast('تغییرات در مشخصات برند ذخیره شد ✓');
+      return;
+    }
+
     if (act === 'copy') {
       var fmt = el.getAttribute('data-fmt') || currentFmt || 'text';
       var p = build(c, false);
       var textToCopy = E.formatPrompt(p.text, c, fmt);
+      textToCopy = injectBrandToText(textToCopy, c, fmt);
       var btnTxt = $('.btn-txt', el);
       var oldTxt = btnTxt ? btnTxt.textContent : '';
 
@@ -638,6 +1119,21 @@
           ? fmtName + ' کپی شد · ' + fa(p.missing.length) + ' فیلد ضروری هنوز خالی است'
           : fmtName + ' با موفقیت کپی شد';
         toast(msg);
+      });
+      return;
+    }
+
+    if (act === 'scopy') {
+      var sIdx = +el.getAttribute('data-i');
+      var sItem = S.saved[sIdx];
+      var sFmt = el.getAttribute('data-fmt') || 'text';
+      var sCard = byId[sItem.id];
+      var sFormatted = E.formatPrompt(sItem.text, sCard, sFmt);
+      sFormatted = injectBrandToText(sFormatted, sCard, sFmt);
+
+      copyText(sFormatted).then(function (ok) {
+        var fmtName = sFmt === 'xml' ? 'فرمت XML' : (sFmt === 'markdown' ? 'فرمت مارکداون' : 'متن پرامپت');
+        toast(ok ? fmtName + ' کپی شد' : 'کپی انجام نشد');
       });
       return;
     }

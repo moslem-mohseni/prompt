@@ -430,3 +430,209 @@ textarea { overflow: hidden; }
   .step { display: grid; grid-template-columns: auto 1fr; column-gap: 14px; align-items: start; padding: 16px; }
   .step .num { grid-row: span 2; margin: 2px 0 0; }
 }
+
+/* ---------- کارت راهنمای پرامپت ---------- */
+.prompt-guide-card {
+  margin: 16px 0 20px;
+  background: var(--surface);
+  border: 1px solid rgba(217, 181, 108, .28);
+  border-radius: var(--r);
+  padding: 18px 20px;
+  box-shadow: 0 4px 20px -8px rgba(168, 123, 51, .2);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+}
+.pg-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px;
+}
+.pg-title {
+  display: flex; align-items: center; gap: 8px;
+}
+.pg-title svg {
+  width: 18px; height: 18px; color: var(--gold);
+}
+.pg-title h3 {
+  margin: 0; font-size: 15.5px; font-weight: 700; color: var(--ink);
+}
+.pg-badge {
+  font-size: 11.5px; font-weight: 700; color: var(--gold);
+  background: var(--gold-soft); padding: 2px 9px; border-radius: 999px;
+  border: 1px solid rgba(168, 123, 51, .25);
+}
+.pg-grid {
+  display: grid; grid-template-columns: 1fr; gap: 12px;
+}
+@media (min-width: 820px) {
+  .pg-grid { grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+}
+.pg-item {
+  background: var(--surface-solid);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.pg-label {
+  font-size: 12.5px; font-weight: 700; color: var(--gold);
+  display: flex; align-items: center; gap: 5px;
+}
+.pg-text {
+  font-size: 13.5px; line-height: 1.8; color: var(--ink-2);
+}
+
+/* ---------- هاب پیوند برند من ---------- */
+.brand-hub {
+  margin-bottom: 18px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-solid);
+  transition: all .2s ease;
+}
+.brand-hub.brand-connected {
+  border-color: rgba(22, 163, 74, .3);
+  background: linear-gradient(135deg, rgba(22, 163, 74, .06), var(--surface-solid) 70%);
+}
+.brand-hub.brand-empty {
+  border-color: rgba(202, 138, 4, .3);
+  background: linear-gradient(135deg, rgba(214, 179, 106, .08), var(--surface-solid) 70%);
+}
+.brand-hub-top {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;
+}
+.brand-hub-status {
+  display: flex; align-items: center; gap: 7px; font-size: 13.5px; font-weight: 700; color: #16a34a;
+}
+:root[data-theme="dark"] .brand-hub-status { color: #4ade80; }
+.brand-hub-status.empty-status { color: var(--gold); }
+.brand-hub-status svg { width: 17px; height: 17px; }
+.brand-hub-desc {
+  margin: 0 0 10px; font-size: 13.5px; line-height: 1.75; color: var(--ink-2);
+}
+.brand-chips {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;
+}
+.bchip {
+  display: inline-flex; align-items: center; gap: 4px; font-size: 12px;
+  padding: 3px 10px; border-radius: 8px; background: var(--surface-2);
+  border: 1px solid var(--line); color: var(--ink-2);
+}
+.bchip b { color: var(--ink); font-weight: 700; }
+.bchip-wide { max-width: 100%; white-space: normal; }
+
+.brand-hub-bottom {
+  display: flex; flex-direction: column; gap: 10px;
+  border-top: 1px dashed var(--line); padding-top: 10px;
+}
+@media (min-width: 600px) {
+  .brand-hub-bottom { flex-direction: row; align-items: center; justify-content: space-between; }
+}
+.brand-inject-toggle {
+  display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--ink);
+}
+.brand-inject-toggle input { width: 16px; height: 16px; min-height: 16px; margin: 0; cursor: pointer; }
+.brand-inject-note {
+  display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: #16a34a;
+}
+.brand-inject-note svg { width: 15px; height: 15px; }
+
+.brand-persona-pills {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+.bpp-label {
+  font-size: 12px; font-weight: 700; color: var(--ink-3);
+}
+.bpp-btn {
+  padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink-2); font: inherit; font-size: 12px;
+  cursor: pointer; transition: all .14s ease;
+}
+.bpp-btn:hover { border-color: var(--gold); color: var(--ink); }
+.bpp-btn.active {
+  background: var(--btn); color: var(--btn-ink); font-weight: 700; border-color: transparent;
+}
+
+/* دکمه‌های بازنشانی و ذخیره فیلدهای برند */
+.field-brand-actions {
+  display: inline-flex; align-items: center; gap: 6px; margin-inline-start: auto;
+}
+.field-action-btn {
+  background: transparent; border: 0; padding: 1px 6px; border-radius: 6px;
+  font: inherit; font-size: 11.5px; color: var(--gold); cursor: pointer;
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.field-action-btn:hover { background: var(--gold-soft); }
+
+/* مقایسه قبل و بعد در راهنما */
+.before-after-grid {
+  display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: 24px;
+}
+@media (min-width: 760px) {
+  .before-after-grid { grid-template-columns: 1fr 1fr; }
+}
+.ba-card {
+  padding: 20px; display: flex; flex-direction: column; gap: 10px;
+}
+.ba-before {
+  border-color: rgba(220, 38, 38, .3);
+  background: linear-gradient(135deg, rgba(220, 38, 38, .04), var(--surface) 60%);
+}
+.ba-after {
+  border-color: rgba(22, 163, 74, .3);
+  background: linear-gradient(135deg, rgba(22, 163, 74, .05), var(--surface) 60%);
+}
+.ba-badge {
+  display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 999px;
+  font-size: 12.5px; font-weight: 700; width: fit-content;
+}
+.ba-badge.red { background: var(--red-soft); color: var(--red); }
+.ba-badge.green { background: rgba(22, 163, 74, .14); color: #16a34a; }
+.ba-desc { font-size: 13.5px; margin: 0; color: var(--ink-2); line-height: 1.7; }
+.ba-quote {
+  background: var(--surface-solid); border: 1px solid var(--line); border-radius: 12px;
+  padding: 12px 14px; font-size: 14px; line-height: 1.85; font-style: italic; color: var(--ink);
+}
+.ba-foot {
+  font-size: 13px; font-weight: 700; margin-top: auto; padding-top: 6px;
+}
+.ba-foot.red { color: var(--red); }
+.ba-foot.green { color: #16a34a; }
+
+/* قطب‌نمای نیازها */
+.compass-grid {
+  display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: 24px;
+}
+@media (min-width: 760px) {
+  .compass-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (min-width: 1040px) {
+  .compass-grid { grid-template-columns: repeat(3, 1fr); }
+}
+.compass-card {
+  padding: 20px; display: flex; flex-direction: column; gap: 8px;
+}
+.cc-head {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 2px;
+}
+.cc-head .ico {
+  width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center;
+  background: var(--gold-soft); color: var(--gold); border: 1px solid rgba(168, 123, 51, .2);
+}
+.cc-head .ico svg { width: 17px; height: 17px; }
+.cc-head h3 { font-size: 16px; margin: 0; }
+.compass-card p {
+  font-size: 13px; margin: 0 0 6px; color: var(--ink-2); line-height: 1.7;
+}
+.cc-links {
+  list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 7px;
+}
+.cc-links li a {
+  display: block; padding: 8px 10px; border-radius: 10px; background: var(--surface-solid);
+  border: 1px solid var(--line); font-size: 13px; text-decoration: none; color: var(--ink-2);
+  transition: all .15s ease; line-height: 1.6;
+}
+.cc-links li a:hover {
+  border-color: var(--gold); color: var(--ink); transform: translateX(-3px);
+  background: var(--surface-2);
+}
+.cc-links li a b { color: var(--ink); font-weight: 700; }
+
