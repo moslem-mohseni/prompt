@@ -1,0 +1,21 @@
+# ===========================================
+# Prompt Bank - Docker Compose
+# ===========================================
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: prompt_web
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+    networks:
+      - webproxy
+
+networks:
+  webproxy:
+    external: true
