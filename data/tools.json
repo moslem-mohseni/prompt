@@ -1,0 +1,322 @@
+{
+  "_note": "فهرست مرکزی ابزار. هر کارت فقط کلید این فهرست را دارد؛ با تغییر یک ردیف، همه‌ی کارت‌ها به‌روز می‌شوند. prefill فقط برای ابزاری true می‌شود که در فاز ۳ آزموده شده باشد.",
+  "apps": {
+    "chatgpt": {
+      "name": "ChatGPT",
+      "url": "https://chatgpt.com/",
+      "prefill": false
+    },
+    "gemini": {
+      "name": "Gemini",
+      "url": "https://gemini.google.com/app",
+      "prefill": false
+    },
+    "gemini_web": {
+      "name": "Gemini (نسخه‌ی وب)",
+      "url": "https://gemini.google.com/gems/view",
+      "prefill": false
+    },
+    "claude": {
+      "name": "Claude",
+      "url": "https://claude.ai/new",
+      "prefill": false
+    },
+    "notebook": {
+      "name": "Gemini Notebook",
+      "url": "https://notebooklm.google.com/",
+      "prefill": false
+    },
+    "arena": {
+      "name": "Arena",
+      "url": "https://arena.ai/",
+      "prefill": false
+    },
+    "arena_lb": {
+      "name": "لیدربورد Arena",
+      "url": "https://arena.ai/leaderboard",
+      "prefill": false
+    },
+    "flow": {
+      "name": "Flow",
+      "url": "https://labs.google/fx/tools/flow",
+      "prefill": false
+    },
+    "kling": {
+      "name": "Kling",
+      "url": "https://klingai.com/",
+      "prefill": false
+    },
+    "hailuo": {
+      "name": "Hailuo",
+      "url": "https://hailuoai.video/",
+      "prefill": false
+    },
+    "scholar": {
+      "name": "Google Scholar",
+      "url": "https://scholar.google.com/",
+      "prefill": false
+    },
+    "gdocs": {
+      "name": "Google Docs",
+      "url": "https://docs.google.com/document/",
+      "prefill": false
+    },
+    "gsheets": {
+      "name": "Google Sheets",
+      "url": "https://docs.google.com/spreadsheets/",
+      "prefill": false
+    },
+    "gslides": {
+      "name": "Google Slides",
+      "url": "https://docs.google.com/presentation/",
+      "prefill": false
+    },
+    "aa": {
+      "name": "Artificial Analysis",
+      "url": "https://artificialanalysis.ai/",
+      "prefill": false
+    }
+  },
+  "tools": {
+    "any": {
+      "label": "هر ابزار",
+      "task": "کار عمومی",
+      "first": [
+        "chatgpt",
+        "gemini",
+        "claude"
+      ],
+      "alt": [],
+      "note": ""
+    },
+    "same_chat": {
+      "label": "همان چت",
+      "task": "ادامه در همان گفت‌وگو",
+      "first": [],
+      "alt": [],
+      "note": "این پرامپت را در همان چتی بفرستید که کار در آن انجام شده."
+    },
+    "new_chat": {
+      "label": "چت تازه",
+      "task": "شروع تمیز",
+      "first": [
+        "chatgpt",
+        "gemini",
+        "claude"
+      ],
+      "alt": [],
+      "note": "یک چت تازه باز کنید؛ اگر ابزار حافظه دارد، چت موقت بهتر است."
+    },
+    "writing": {
+      "label": "نوشتن",
+      "task": "نوشتن و ویرایش متن",
+      "first": [
+        "chatgpt",
+        "gemini",
+        "claude"
+      ],
+      "alt": [],
+      "note": "ابزار پیش‌فرض نوشتن پس از آزمون فاز ۳ تعیین می‌شود؛ تا آن موقع ابزاری را بزنید که در ۰۷ برنده‌ی نوشتن شد."
+    },
+    "image": {
+      "label": "تصویر",
+      "task": "ساخت و ویرایش تصویر",
+      "first": [
+        "chatgpt"
+      ],
+      "alt": [
+        "gemini"
+      ],
+      "note": "متن دقیق فارسی (قیمت، تاریخ، اطلاعات سلامت) را در اپ طراحی اضافه کنید، نه در مدل تصویر."
+    },
+    "math": {
+      "label": "محاسبه",
+      "task": "محاسبه و تحلیل عددی",
+      "first": [
+        "gemini"
+      ],
+      "alt": [],
+      "note": "مراحل و فرمول را بخواهید و یکی از عددها را با روش دوم یا ماشین‌حساب چک کنید."
+    },
+    "sheets": {
+      "label": "جدول و اکسل",
+      "task": "جدول و فایل اکسل",
+      "first": [
+        "gemini"
+      ],
+      "alt": [
+        "chatgpt"
+      ],
+      "note": "ستون‌های محاسباتی باید فرمول باشند، نه عدد ثابت."
+    },
+    "docs": {
+      "label": "سند و PDF",
+      "task": "ساخت فایل Word و PDF",
+      "first": [
+        "gemini"
+      ],
+      "alt": [
+        "claude"
+      ],
+      "note": "پیشنهاد فعلی Gemini (ساخت فایل در چت)؛ تصمیم نهایی با مدرس پس از آزمون فاز ۳."
+    },
+    "slides": {
+      "label": "ارائه",
+      "task": "ارائه‌ی اسلایدی",
+      "first": [
+        "notebook",
+        "gemini"
+      ],
+      "alt": [
+        "gslides"
+      ],
+      "note": "Notebook برای ارائه‌ی سریع و تمام‌شده (خروجی تصویری و غیرقابل ویرایش)؛ Canvas در Gemini و انتقال به Google Slides برای ارائه‌ی قابل ویرایش."
+    },
+    "slides_paid": {
+      "label": "ارائه (پولی)",
+      "task": "ارائه با Claude Design",
+      "first": [
+        "claude"
+      ],
+      "alt": [],
+      "note": "فقط به‌عنوان مسیر پولی معرفی می‌شود."
+    },
+    "code": {
+      "label": "برنامه‌نویسی",
+      "task": "کد و ممیزی کد",
+      "first": [
+        "claude"
+      ],
+      "alt": [],
+      "note": "کار را به گام‌های کوچک بشکنید و بعد از هر گام آزمایش کنید."
+    },
+    "web": {
+      "label": "صفحه‌ی وب",
+      "task": "ساخت صفحه‌ی وب",
+      "first": [
+        "arena"
+      ],
+      "alt": [
+        "gemini"
+      ],
+      "note": "Grok 4.6 در Code Arena (حالت Direct یا Side by Side)؛ جایگزین: Canvas در Gemini. فقط محتوای سبز در Arena."
+    },
+    "learn": {
+      "label": "یادگیری از منبع",
+      "task": "یادگیری، پادکست و آزمون از منبع",
+      "first": [
+        "notebook"
+      ],
+      "alt": [
+        "gemini",
+        "chatgpt",
+        "claude"
+      ],
+      "note": "جایگزین: حالت‌های یادگیری (Guided Learning، Study Mode، Learning Mode)."
+    },
+    "video": {
+      "label": "ویدیو",
+      "task": "تصویر به ویدیو",
+      "first": [
+        "flow"
+      ],
+      "alt": [
+        "kling",
+        "hailuo"
+      ],
+      "note": "اول تصویر، بعد حرکت. آزمایش با Lite یا Fast."
+    },
+    "compare": {
+      "label": "مقایسه‌ی کور",
+      "task": "مقایسه‌ی مدل‌ها",
+      "first": [
+        "arena"
+      ],
+      "alt": [
+        "chatgpt",
+        "gemini",
+        "claude"
+      ],
+      "note": "حالت Battle؛ جایگزین: همان پرامپت در سه اپ، هر کدام در چت تازه. فقط محتوای سبز."
+    },
+    "critique": {
+      "label": "نقد",
+      "task": "نقد با چشم تازه",
+      "first": [
+        "claude",
+        "chatgpt",
+        "gemini"
+      ],
+      "alt": [],
+      "note": "ابزاری غیر از ابزاری که پیش‌نویس را نوشته؛ یا دست‌کم یک چت تازه در همان ابزار."
+    },
+    "sensitive": {
+      "label": "زمینه‌ی حساس",
+      "task": "کار روی متن ناشناس‌شده",
+      "first": [
+        "claude",
+        "chatgpt"
+      ],
+      "alt": [],
+      "note": "فقط چت ناشناس Claude یا چت موقت ChatGPT. هرگز Arena یا Gem اشتراکی."
+    },
+    "research": {
+      "label": "پژوهش چندمنبعی",
+      "task": "Deep Research",
+      "first": [
+        "gemini",
+        "chatgpt"
+      ],
+      "alt": [],
+      "note": "سقف رایگان Deep Research را روی حساب خودتان چک کنید. منابع کلیدی را خودتان باز کنید."
+    },
+    "gem_build": {
+      "label": "ساخت Gem",
+      "task": "ساخت و ویرایش Gem",
+      "first": [
+        "gemini_web"
+      ],
+      "alt": [
+        "chatgpt",
+        "claude"
+      ],
+      "note": "ساخت Gem فقط در نسخه‌ی وب؛ جایگزین: Project در ChatGPT یا Claude."
+    },
+    "phone": {
+      "label": "روی گوشی",
+      "task": "بدون هوش مصنوعی",
+      "first": [],
+      "alt": [],
+      "note": "این کارت روی خود بانک یا گوشی انجام می‌شود."
+    },
+    "leaderboard": {
+      "label": "لیدربورد",
+      "task": "خواندن لیدربورد",
+      "first": [
+        "arena_lb"
+      ],
+      "alt": [
+        "aa"
+      ],
+      "note": ""
+    },
+    "scholar": {
+      "label": "راستی‌آزمایی",
+      "task": "چک ارجاع علمی",
+      "first": [
+        "scholar"
+      ],
+      "alt": [],
+      "note": "عنوان را عیناً جست‌وجو کنید."
+    },
+    "gem": {
+      "label": "Gem",
+      "task": "استفاده از Gem آماده",
+      "first": [
+        "gemini"
+      ],
+      "alt": [],
+      "note": "لینک Gem را لمس کنید؛ اگر هنوز لینک ندارد، دستورالعمل را در یک چت تازه بچسبانید."
+    }
+  }
+}

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; style-src 'self'; script-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#0d1117" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f5f2ec" media="(prefers-color-scheme: light)">
+<meta name="description" content="بانک پرامپت: پرامپت آماده را پیدا کنید، شخصی کنید، کپی کنید.">
+<title>بانک پرامپت</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="بانک پرامپت">
+<link rel="preload" href="fonts/Vazirmatn-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="bg" aria-hidden="true"></div>
+<header class="top">
+  <a class="brandmark" href="#/" aria-label="بانک پرامپت، صفحه‌ی اصلی">
+    <span class="mark" aria-hidden="true"></span>
+    <span>بانک پرامپت</span>
+  </a>
+  <nav class="tabs" aria-label="بخش‌ها" id="tabs"></nav>
+</header>
+<main id="main" tabindex="-1"><div class="loading">…</div></main>
+<nav class="dock" aria-label="بخش‌ها" id="dock"></nav>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script src="engine.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

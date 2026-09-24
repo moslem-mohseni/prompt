@@ -1,0 +1,49 @@
+{
+  "_note": "صفحه‌ی «برند من». هر فیلد با کلید profile در پرامپت‌ها خودکار پر می‌شود. سند لحن از فیلدهای بخش voice ساخته و در کلید voice_doc ذخیره می‌شود.",
+  "sections": [
+    {
+      "id": "about",
+      "title": "درباره‌ی کار من",
+      "sub": "یک بار بنویسید؛ پرامپت‌ها خودکار شخصی می‌شوند.",
+      "fields": [
+        {"key": "role", "label": "نقش من", "example": "روان‌درمانگر / صاحب فروشگاه آنلاین / مدرس"},
+        {"key": "business", "label": "کسب‌وکار یا حوزه‌ی کارم", "example": "فروش دمنوش و ادویه از اینستاگرام و تلگرام"},
+        {"key": "audience", "label": "مخاطب من و اینکه به چه چیزی بی‌اعتماد است", "type": "textarea", "example": "خانواده‌هایی که به تبلیغات اغراق‌آمیز بی‌اعتمادند"},
+        {"key": "tone", "label": "لحن من در یک جمله", "example": "دوست کاربلد، ساده، ملموس"},
+        {"key": "task", "label": "کار تکراری‌ای که می‌خواهم ساده‌تر شود", "type": "textarea", "example": "نوشتن کپشن و ساختن عکس برای ۴ پست در هفته"},
+        {"key": "current_time", "label": "الان چقدر وقت می‌گیرد", "example": "حدود ۶ ساعت در هفته"},
+        {"key": "success_metric", "label": "معیار موفقیت (عدد یا نشانه‌ی عینی)", "example": "زیر ۲ ساعت در هفته، بدون افت فروش"}
+      ],
+      "note": "درباره‌ی کار خودتان بنویسید، نه درباره‌ی افراد؛ هیچ نام یا مشخصاتی از مشتری یا مراجع."
+    },
+    {
+      "id": "voice",
+      "title": "سند لحن",
+      "sub": "لحن شما، برای هر متنی که هوش مصنوعی می‌نویسد.",
+      "compose": "voice_doc",
+      "helper": "04-01",
+      "fields": [
+        {"key": "voice_why", "label": "چرا این لحن؟", "example": "مخاطب ما به تبلیغ اغراق‌آمیز بی‌اعتماد است"},
+        {"key": "voice_use", "label": "واژه‌هایی که استفاده می‌کنیم", "example": "دم کنید، بو، شب، فنجان، لینک بیو"},
+        {"key": "voice_avoid", "label": "واژه‌هایی که استفاده نمی‌کنیم و چرا", "example": "شگفت‌انگیز، بی‌نظیر؛ نشانه‌ی تبلیغ ماشینی"},
+        {"key": "voice_length", "label": "طول معمول", "example": "اینستاگرام حداکثر ۴۰ کلمه؛ تلگرام تا ۱۵۰"},
+        {"key": "voice_samples", "label": "سه نمونه از بهترین متن‌های خودم", "type": "repeat", "count": 3}
+      ],
+      "template": "سند لحن\n{{#audience}}مخاطب: {{audience}}\n{{/audience}}{{#tone}}لحن در یک جمله: {{tone}}\n{{/tone}}{{#voice_why}}چرا این لحن: {{voice_why}}\n{{/voice_why}}{{#voice_use}}واژه‌هایی که استفاده می‌کنیم: {{voice_use}}\n{{/voice_use}}{{#voice_avoid}}واژه‌هایی که استفاده نمی‌کنیم: {{voice_avoid}}\n{{/voice_avoid}}{{#voice_length}}طول معمول: {{voice_length}}\n{{/voice_length}}{{#voice_samples}}\nنمونه‌ی {{@n}}:\n{{.}}\n{{/voice_samples}}"
+    },
+    {
+      "id": "brand",
+      "title": "کیت برند",
+      "sub": "رنگ و حال‌وهوای تصویر، اسلاید و صفحه‌ی وب.",
+      "compose": "brand_kit",
+      "fields": [
+        {"key": "brand_colors", "label": "رنگ‌های اصلی (با کد رنگ)", "example": "#7A1F2B قرمز انار، #F3E9D2 کرم"},
+        {"key": "brand_mood", "label": "حال‌وهوا", "example": "گرم، خانگی، بدون شلوغی"},
+        {"key": "brand_style", "label": "سبک تصویر", "example": "عکس واقعی محصول با نور طبیعی"},
+        {"key": "brand_fonts", "label": "فونت متن روی تصویر", "example": "وزیرمتن"},
+        {"key": "brand_ref", "label": "تصویر مرجع سبک", "example": "شیشه‌ی دمنوش روی میز چوبی با نور پنجره"}
+      ],
+      "template": "کیت برند\n{{#brand_colors}}رنگ‌های اصلی: {{brand_colors}}\n{{/brand_colors}}{{#brand_mood}}حال‌وهوا: {{brand_mood}}\n{{/brand_mood}}{{#brand_style}}سبک تصویر: {{brand_style}}\n{{/brand_style}}{{#brand_fonts}}فونت متن روی تصویر: {{brand_fonts}}\n{{/brand_fonts}}{{#brand_ref}}تصویر مرجع سبک: {{brand_ref}}\n{{/brand_ref}}"
+    }
+  ]
+}
