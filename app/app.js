@@ -85,11 +85,61 @@
 
   // پالت‌های رنگی آماده و هماهنگ
   var BRAND_PALETTES = [
-    { id: 'calm', name: 'سلامت و آرامش', desc: 'روان‌درمانی، مشاوره و طب سنتی', colors: '#4A6B5D سبز زیتونی، #F4EFEA کرم خاکی، #2E3A34 دودی تیره', hexes: ['#4A6B5D', '#F4EFEA', '#2E3A34'] },
-    { id: 'academic', name: 'آکادمیک و متانت', desc: 'آموزش، پژوهش و حقوق', colors: '#1D3557 سرمه‌ای، #D4AF37 طلایی مات، #F8F9FA عاجی روشن', hexes: ['#1D3557', '#D4AF37', '#F8F9FA'] },
-    { id: 'modern', name: 'مدرن و فناوری', desc: 'دیجیتال، نرم‌افزار و داده', colors: '#2563EB آبی کبالت، #F1F5F9 سفید یخی، #1E293B زغالی', hexes: ['#2563EB', '#F1F5F9', '#1E293B'] },
-    { id: 'cozy', name: 'صمیمی و طبیعی', desc: 'دمنوش، کافه و محصولات خانگی', colors: '#6B4226 قهوه‌ای گرم، #F5EBE0 شنی ملایم، #3A2312 سوخته', hexes: ['#6B4226', '#F5EBE0', '#3A2312'] },
-    { id: 'creative', name: 'خلاقیت و هنر', desc: 'طراحی، محتوا و لایف‌استایل', colors: '#7C3AED بنفش ژرف، #FCE7F3 یاسی ملایم، #1F1035 دودی', hexes: ['#7C3AED', '#FCE7F3', '#1F1035'] }
+    {
+      id: 'calm',
+      name: 'سلامت و آرامش',
+      desc: 'روان‌درمانی، مشاوره، سلامت و پزشکی',
+      hexes: ['#4A6B5D', '#E29578', '#F4EFEA'],
+      items: [
+        { color: '#4A6B5D', label: 'رنگ اصلی (سبز زیتونی آرامش‌بخش)' },
+        { color: '#E29578', label: 'دکمه و اقدام (گلبهی خاکی)' },
+        { color: '#F4EFEA', label: 'پس‌زمینه اسلاید و محتوا' }
+      ]
+    },
+    {
+      id: 'academic',
+      name: 'آکادمیک و متانت',
+      desc: 'آموزش، پژوهش، اندیشکده و حقوق',
+      hexes: ['#1D3557', '#D4AF37', '#F8F9FA'],
+      items: [
+        { color: '#1D3557', label: 'رنگ اصلی (سرمه‌ای متین)' },
+        { color: '#D4AF37', label: 'تأکید و نشان‌ها (طلایی مات)' },
+        { color: '#F8F9FA', label: 'پس‌زمینه روشن و عاجی' }
+      ]
+    },
+    {
+      id: 'modern',
+      name: 'مدرن و فناوری',
+      desc: 'فناوری، نرم‌افزار، استارتاپ و داده',
+      hexes: ['#2563EB', '#0D9488', '#0F172A'],
+      items: [
+        { color: '#2563EB', label: 'رنگ اصلی (آبی کبالت فناوری)' },
+        { color: '#0D9488', label: 'دکمه و اقدام (فیروزه‌ای زنده)' },
+        { color: '#0F172A', label: 'تیترها و کادر تیره' }
+      ]
+    },
+    {
+      id: 'cozy',
+      name: 'صمیمی و ارگانیک',
+      desc: 'دمنوش، کافه، صنایع دستی و غذایی',
+      hexes: ['#6B4226', '#D97706', '#FDF8F0'],
+      items: [
+        { color: '#6B4226', label: 'رنگ اصلی (قهوه‌ای گرم زمینی)' },
+        { color: '#D97706', label: 'تأکید و جلب توجه (کهربایی)' },
+        { color: '#FDF8F0', label: 'پس‌زمینه شنی گرم' }
+      ]
+    },
+    {
+      id: 'creative',
+      name: 'خلاقیت و هنر',
+      desc: 'طراحی، مد، رسانه، تولید محتوا و هنر',
+      hexes: ['#7C3AED', '#EC4899', '#FAF5FF'],
+      items: [
+        { color: '#7C3AED', label: 'رنگ اصلی (بنفش خلاقیت)' },
+        { color: '#EC4899', label: 'دکمه و تأکید (سرخابی پرانرژی)' },
+        { color: '#FAF5FF', label: 'پس‌زمینه ملایم یاسی' }
+      ]
+    }
   ];
   var BRAND_FONTS = ['وزیرمتن', 'یکان‌بخش', 'ایران‌یکان', 'شبنم', 'دانا'];
 
@@ -109,6 +159,8 @@
     var tone = prof.tone ? String(prof.tone).trim() : '';
     var avoid = prof.voice_avoid ? String(prof.voice_avoid).trim() : '';
     var use = prof.voice_use ? String(prof.voice_use).trim() : '';
+    var bColors = prof.brand_colors ? String(prof.brand_colors).trim() : '';
+    var bFonts = prof.brand_fonts ? String(prof.brand_fonts).trim() : '';
 
     if (fmt === 'xml') {
       var brandXml = '  <brand_voice>\n';
@@ -118,6 +170,8 @@
       if (tone) brandXml += '    <tone>' + tone + '</tone>\n';
       if (use) brandXml += '    <preferred_terms>' + use + '</preferred_terms>\n';
       if (avoid) brandXml += '    <avoid_terms>' + avoid + '</avoid_terms>\n';
+      if (bColors) brandXml += '    <brand_colors>' + bColors + '</brand_colors>\n';
+      if (bFonts) brandXml += '    <brand_fonts>' + bFonts + '</brand_fonts>\n';
       brandXml += '  </brand_voice>';
 
       if (/<\/prompt>\s*$/.test(rawText)) {
@@ -134,6 +188,8 @@
       if (tone) brandMd += '- **لحن کلام:** ' + tone + '\n';
       if (use) brandMd += '- **واژه‌های مورد استفاده:** ' + use + '\n';
       if (avoid) brandMd += '- **واژه‌های ممنوعه (خط‌قرمزها):** ' + avoid + '\n';
+      if (bColors) brandMd += '- **پالت رنگ‌های برند:** ' + bColors + '\n';
+      if (bFonts) brandMd += '- **فونت برند:** ' + bFonts + '\n';
       return rawText.trim() + '\n\n' + brandMd.trim();
     }
 
@@ -145,6 +201,8 @@
     if (tone) lines.push('لحن صحبت: ' + tone);
     if (use) lines.push('واژه‌های مورد استفاده: ' + use);
     if (avoid) lines.push('واژه‌های ممنوعه: ' + avoid);
+    if (bColors) lines.push('پالت رنگ‌های برند: ' + bColors);
+    if (bFonts) lines.push('فونت برند: ' + bFonts);
     return rawText.trim() + '\n' + lines.join('\n');
   }
 
@@ -695,27 +753,150 @@
     });
   }
 
+  function normalizeHex(c) {
+    if (!c) return '#4A6B5D';
+    c = String(c).trim();
+    if (c[0] !== '#') c = '#' + c;
+    if (/^#[0-9a-fA-F]{6}$/.test(c)) return c.toUpperCase();
+    if (/^#[0-9a-fA-F]{3}$/.test(c)) {
+      return ('#' + c[1] + c[1] + c[2] + c[2] + c[3] + c[3]).toUpperCase();
+    }
+    return '#4A6B5D';
+  }
+
+  function getBrandColorsList() {
+    if (Array.isArray(S.profile.brand_colors_list) && S.profile.brand_colors_list.length > 0) {
+      return S.profile.brand_colors_list;
+    }
+    var str = S.profile.brand_colors;
+    if (str && typeof str === 'string' && str.trim()) {
+      var list = [];
+      var re = /(#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3})\s*(\([^)]*\)|[^,#\n\r]+)?/g;
+      var m;
+      while ((m = re.exec(str)) !== null) {
+        var hx = normalizeHex(m[1]);
+        var lbl = (m[2] || '').trim().replace(/^[\s(]+|[)\s]+$/g, '');
+        list.push({ color: hx, label: lbl });
+      }
+      if (list.length > 0) {
+        S.profile.brand_colors_list = list;
+        return list;
+      }
+    }
+    var def = [
+      { color: '#4A6B5D', label: 'رنگ اصلی و سازمانی' },
+      { color: '#E29578', label: 'دکمه و دعوت به اقدام (CTA)' },
+      { color: '#F4EFEA', label: 'پس‌زمینه اسلاید و محتوا' }
+    ];
+    S.profile.brand_colors_list = def;
+    syncBrandColorsString();
+    return def;
+  }
+
+  function syncBrandColorsString() {
+    var list = S.profile.brand_colors_list || [];
+    var parts = list.map(function (item) {
+      var c = normalizeHex(item.color);
+      var l = (item.label || '').trim();
+      return l ? c + ' (' + l + ')' : c;
+    });
+    S.profile.brand_colors = parts.join('، ');
+    return S.profile.brand_colors;
+  }
+
+  function renderColorBuilder() {
+    var list = getBrandColorsList();
+    var rowsHtml = list.map(function (item, idx) {
+      var hexVal = normalizeHex(item.color);
+      return '<div class="color-row-item" data-idx="' + idx + '">' +
+        '  <div class="color-picker-badge" style="background:' + hexVal + '" title="کلیک برای باز کردن طیف کامل رنگ">' +
+        '    <span class="color-picker-icon">' + ic('spark') + '</span>' +
+        '    <input type="color" class="native-color-input" value="' + hexVal + '" data-act="color-picker-change" data-idx="' + idx + '" aria-label="انتخاب از طیف رنگ">' +
+        '  </div>' +
+        '  <div class="color-hex-col">' +
+        '    <input type="text" class="color-hex-input" value="' + hexVal + '" data-act="color-hex-change" data-idx="' + idx + '" maxlength="7" placeholder="#000000" aria-label="کد هگز رنگ">' +
+        '    <button type="button" class="btn-spectrum-pill" data-act="open-spectrum" data-idx="' + idx + '">طیف 🎨</button>' +
+        '  </div>' +
+        '  <div class="color-label-col">' +
+        '    <input type="text" class="color-label-input" value="' + h(item.label || '') + '" data-act="color-label-change" data-idx="' + idx + '" placeholder="کاربرد این رنگ (مثلاً: رنگ اصلی، دکمه CTA، پس‌زمینه...)" aria-label="کاربرد رنگ">' +
+        '    <div class="role-chips-row">' +
+        '      <span class="role-chip-hint">برچسب سریع:</span>' +
+        '      <button type="button" class="role-chip-btn" data-act="set-role-chip" data-idx="' + idx + '" data-role="رنگ اصلی و سازمانی">اصلی</button>' +
+        '      <button type="button" class="role-chip-btn" data-act="set-role-chip" data-idx="' + idx + '" data-role="دکمه و اقدام (CTA)">دکمه/CTA</button>' +
+        '      <button type="button" class="role-chip-btn" data-act="set-role-chip" data-idx="' + idx + '" data-role="پس‌زمینه اسلاید و محتوا">پس‌زمینه</button>' +
+        '      <button type="button" class="role-chip-btn" data-act="set-role-chip" data-idx="' + idx + '" data-role="تیترها و تأکید">تیتر/تأکید</button>' +
+        '      <button type="button" class="role-chip-btn" data-act="set-role-chip" data-idx="' + idx + '" data-role="کادر و خطوط">کادر</button>' +
+        '    </div>' +
+        '  </div>' +
+        '  <button type="button" class="btn-del-color" data-act="del-color-row" data-idx="' + idx + '" title="حذف این رنگ" aria-label="حذف این رنگ">' +
+        ic('trash') +
+        '  </button>' +
+        '</div>';
+    }).join('');
+
+    var previewSegments = list.map(function (item) {
+      return '<span class="color-live-segment" style="background:' + normalizeHex(item.color) + '" title="' + h((item.label ? item.label + ': ' : '') + item.color) + '"></span>';
+    }).join('');
+
+    var compiledStr = syncBrandColorsString();
+
+    return '<div class="color-builder-box" id="brand-color-builder">' +
+      '  <div class="color-builder-head">' +
+      '    <div class="color-builder-title">' + ic('diamond') + '<span>رنگ‌های انتخاب‌شده در پالت برند من:</span></div>' +
+      '    <p class="color-builder-desc">روی نشانگر هر رنگ یا دکمه «طیف 🎨» کلیک کنید تا طیف رنگ‌ها باز شود و بصری انتخاب کنید. می‌توانید برای هر رنگ برچسب نقش بنویسید یا رنگ تازه بیفزایید.</p>' +
+      '  </div>' +
+      '  <div class="color-rows-list" id="color-rows-list">' + rowsHtml + '</div>' +
+      '  <div class="color-builder-foot">' +
+      '    <button type="button" class="btn-add-color-row" data-act="add-color-row">' + ic('plus') + '<span>+ افزودن رنگ جدید به پالت</span></button>' +
+      '    <div class="color-live-preview-box">' +
+      '      <div class="color-live-preview-bar">' + previewSegments + '</div>' +
+      '      <div class="color-compiled-text">خروجی هوشمند برای پرامپت‌ها و اسلایدها: <strong id="compiled-colors-label">' + h(compiledStr || '(هنوز رنگی انتخاب نشده)') + '</strong></div>' +
+      '    </div>' +
+      '  </div>' +
+      '  <input type="hidden" id="b_brand_colors" data-b="brand_colors" value="' + h(compiledStr) + '">' +
+      '</div>';
+  }
+
+  function updateColorLivePreview() {
+    var list = getBrandColorsList();
+    var pBar = $('.color-live-preview-bar');
+    if (pBar) {
+      pBar.innerHTML = list.map(function (item) {
+        return '<span class="color-live-segment" style="background:' + normalizeHex(item.color) + '" title="' + h((item.label ? item.label + ': ' : '') + item.color) + '"></span>';
+      }).join('');
+    }
+    var compLabel = $('#compiled-colors-label');
+    var compiledStr = syncBrandColorsString();
+    if (compLabel) {
+      compLabel.textContent = compiledStr || '(هنوز رنگی انتخاب نشده)';
+    }
+    var hiddenInp = $('#b_brand_colors');
+    if (hiddenInp) {
+      hiddenInp.value = compiledStr;
+    }
+  }
+
   function brandField(f) {
     var v = S.profile[f.key] || '';
     var ph = f.example ? ' placeholder="' + h('مثلاً: ' + f.example) + '"' : '';
 
     if (f.key === 'brand_colors') {
-      var palettesHtml = '<div class="palettes-title">' + ic('spark') + 'انتخاب سریع از بین پالت‌های هماهنگ:</div>' +
-        '<div class="palettes-grid">' +
+      var palettesHtml = '<div class="preset-pills-row">' +
+        '<span class="preset-pill-label">' + ic('spark') + 'بارگذاری پالت‌های پیشنهادی:</span>' +
         BRAND_PALETTES.map(function (pal) {
-          var isCur = S.profile.brand_colors && S.profile.brand_colors.indexOf(pal.hexes[0]) >= 0;
-          return '<div class="palette-card' + (isCur ? ' active' : '') + '" data-act="select-palette" data-pal="' + pal.id + '">' +
-            '  <div class="palette-card-top"><span class="palette-name">' + h(pal.name) + '</span><span class="palette-desc">' + h(pal.desc) + '</span></div>' +
-            '  <div class="palette-swatches-row">' +
-            pal.hexes.map(function (hx) { return '<span class="palette-swatch-circle" style="background:' + hx + '"></span>'; }).join('') +
-            '  </div>' +
-            '</div>';
-        }).join('') + '</div>';
+          return '<button type="button" class="preset-pill-btn" data-act="select-palette" data-pal="' + pal.id + '">' +
+            '<span class="preset-pill-swatches">' +
+            pal.hexes.map(function (hx) { return '<span class="preset-mini-dot" style="background:' + hx + '"></span>'; }).join('') +
+            '</span>' +
+            '<span>' + h(pal.name) + '</span>' +
+            '</button>';
+        }).join('') +
+        '</div>';
 
       return '<div class="field">' +
-        '  <label for="b_' + f.key + '">' + h(f.label) + '</label>' +
+        '  <label>' + h(f.label) + '</label>' +
         palettesHtml +
-        '  <textarea id="b_' + f.key + '" data-b="' + f.key + '" class="auto-grow" rows="2"' + ph + '>' + h(v) + '</textarea>' +
+        renderColorBuilder() +
         '</div>';
     }
 
@@ -852,20 +1033,91 @@
       return;
     }
 
+    if (act === 'open-spectrum') {
+      var row = el.closest('.color-row-item');
+      if (row) {
+        var pi = row.querySelector('.native-color-input');
+        if (pi) {
+          if (typeof pi.showPicker === 'function') {
+            try { pi.showPicker(); } catch (err) { pi.click(); }
+          } else {
+            pi.click();
+          }
+        }
+      }
+      return;
+    }
+
     if (act === 'select-palette') {
       var palId = el.getAttribute('data-pal');
       var targetPal = BRAND_PALETTES.filter(function (p) { return p.id === palId; })[0];
       if (targetPal) {
-        S.profile.brand_colors = targetPal.colors;
-        var inp = $('#b_brand_colors');
-        if (inp) inp.value = targetPal.colors;
+        S.profile.brand_colors_list = JSON.parse(JSON.stringify(targetPal.items));
+        syncBrandColorsString();
         persist();
         refreshBrand();
-        $$('.palette-card').forEach(function (pc) {
-          pc.classList.toggle('active', pc.getAttribute('data-pal') === palId);
+        var bBox = $('#brand-color-builder');
+        if (bBox) {
+          bBox.outerHTML = renderColorBuilder();
+        }
+        $$('.preset-pill-btn').forEach(function (pb) {
+          pb.classList.toggle('active', pb.getAttribute('data-pal') === palId);
         });
-        toast('🎨 پالت «' + targetPal.name + '» انتخاب و ذخیره شد');
+        toast('🎨 پالت «' + targetPal.name + '» در سازنده رنگ بارگذاری شد');
       }
+      return;
+    }
+
+    if (act === 'set-role-chip') {
+      var idx = parseInt(el.getAttribute('data-idx'), 10);
+      var role = el.getAttribute('data-role');
+      var list = getBrandColorsList();
+      if (list[idx]) {
+        list[idx].label = role;
+        var row = el.closest('.color-row-item');
+        if (row) {
+          var li = row.querySelector('.color-label-input');
+          if (li) li.value = role;
+        }
+        updateColorLivePreview();
+        persist();
+        toast('🏷️ برچسب «' + role + '» ثبت شد');
+      }
+      return;
+    }
+
+    if (act === 'add-color-row') {
+      var list = getBrandColorsList();
+      var extraColors = ['#2563EB', '#D97706', '#059669', '#7C3AED', '#DB2777', '#4F46E5', '#0D9488'];
+      var chosen = extraColors[list.length % extraColors.length];
+      list.push({ color: chosen, label: 'رنگ تأکید / کاربرد ویژه' });
+      syncBrandColorsString();
+      persist();
+      refreshBrand();
+      var bBox = $('#brand-color-builder');
+      if (bBox) {
+        bBox.outerHTML = renderColorBuilder();
+      }
+      toast('➕ رنگ جدید اضافه شد؛ روی نشانگر رنگ یا دکمه «طیف 🎨» کلیک کنید');
+      return;
+    }
+
+    if (act === 'del-color-row') {
+      var idx = parseInt(el.getAttribute('data-idx'), 10);
+      var list = getBrandColorsList();
+      if (list.length <= 1) {
+        toast('حداقل یک رنگ باید در پالت باقی بماند');
+        return;
+      }
+      list.splice(idx, 1);
+      syncBrandColorsString();
+      persist();
+      refreshBrand();
+      var bBox = $('#brand-color-builder');
+      if (bBox) {
+        bBox.outerHTML = renderColorBuilder();
+      }
+      toast('🗑️ رنگ از پالت حذف شد');
       return;
     }
 
@@ -887,6 +1139,7 @@
         var bk = inp.getAttribute('data-b');
         S.profile[bk] = inp.value;
       });
+      syncBrandColorsString();
       composeBrand();
       persist();
       refreshBrand();
@@ -1138,6 +1391,58 @@
         catch (x) { toast('این فایل، پشتیبان معتبر بانک پرامپت نیست'); }
       };
       rd.readAsText(el.files[0]); return;
+    }
+    if (el.getAttribute('data-act') === 'color-picker-change') {
+      var idx = parseInt(el.getAttribute('data-idx'), 10);
+      var val = el.value.toUpperCase();
+      var list = getBrandColorsList();
+      if (list[idx]) {
+        list[idx].color = val;
+        var badge = el.closest('.color-picker-badge');
+        if (badge) badge.style.backgroundColor = val;
+        var row = el.closest('.color-row-item');
+        if (row) {
+          var hi = row.querySelector('.color-hex-input');
+          if (hi) hi.value = val;
+        }
+        updateColorLivePreview();
+        persist();
+        refreshBrand();
+      }
+      return;
+    }
+    if (el.getAttribute('data-act') === 'color-hex-change') {
+      var idx = parseInt(el.getAttribute('data-idx'), 10);
+      var val = el.value.trim();
+      var list = getBrandColorsList();
+      if (list[idx]) {
+        if (/^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(val)) {
+          var norm = normalizeHex(val);
+          list[idx].color = norm;
+          var row = el.closest('.color-row-item');
+          if (row) {
+            var b = row.querySelector('.color-picker-badge');
+            if (b) b.style.backgroundColor = norm;
+            var pi = row.querySelector('.native-color-input');
+            if (pi) pi.value = norm;
+          }
+          updateColorLivePreview();
+          persist();
+          refreshBrand();
+        }
+      }
+      return;
+    }
+    if (el.getAttribute('data-act') === 'color-label-change') {
+      var idx = parseInt(el.getAttribute('data-idx'), 10);
+      var val = el.value;
+      var list = getBrandColorsList();
+      if (list[idx]) {
+        list[idx].label = val;
+        updateColorLivePreview();
+        persist();
+      }
+      return;
     }
     if (el.hasAttribute('data-b')) {
       var bk = el.getAttribute('data-b');
