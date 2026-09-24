@@ -760,3 +760,349 @@ textarea { overflow: hidden; }
   line-height: 1.45;
 }
 
+/* ==========================================================================
+   موتور پرامپت جادویی تک‌خطی (Magic Quick Prompt Engine)
+   ========================================================================== */
+.magic-hub {
+  background: linear-gradient(135deg, rgba(201, 162, 91, .14) 0%, rgba(30, 41, 59, .08) 50%, rgba(20, 24, 30, .03) 100%);
+  border: 1.5px solid rgba(201, 162, 91, .38);
+  border-radius: calc(var(--r) + 4px);
+  padding: 24px 26px;
+  margin-bottom: 28px;
+  box-shadow: 0 10px 30px -10px rgba(201, 162, 91, .2), inset 0 1px 0 rgba(255, 255, 255, .15);
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(8px);
+}
+:root[data-theme="dark"] .magic-hub {
+  background: linear-gradient(135deg, rgba(214, 179, 106, .12) 0%, rgba(15, 23, 42, .8) 50%, rgba(10, 14, 22, .9) 100%);
+  border-color: rgba(214, 179, 106, .32);
+  box-shadow: 0 14px 38px -12px rgba(0, 0, 0, .8), inset 0 1px 0 rgba(214, 179, 106, .2);
+}
+.magic-header {
+  margin-bottom: 18px;
+}
+.magic-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: linear-gradient(90deg, var(--gold) 0%, #e6ca85 100%);
+  color: #111;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+  box-shadow: 0 2px 8px rgba(201, 162, 91, .35);
+}
+.magic-badge svg { width: 15px; height: 15px; }
+.magic-header h2 {
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin: 0 0 6px;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+.magic-header p {
+  font-size: 0.88rem;
+  color: var(--ink-2);
+  margin: 0;
+  line-height: 1.6;
+}
+.magic-input-wrap {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+  margin-bottom: 14px;
+}
+@media (max-width: 640px) {
+  .magic-input-wrap { flex-direction: column; }
+}
+.magic-input-box {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.magic-input-box svg {
+  position: absolute;
+  right: 14px;
+  width: 20px;
+  height: 20px;
+  color: var(--gold);
+  pointer-events: none;
+}
+.magic-input-box input {
+  width: 100%;
+  padding: 13px 44px 13px 14px;
+  background: var(--surface-solid);
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-sm);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 0.95rem;
+  transition: all .2s ease;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, .04);
+}
+.magic-input-box input:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px var(--glow-a);
+}
+.btn-magic {
+  background: linear-gradient(135deg, var(--gold) 0%, #b88d3b 100%);
+  color: #fff !important;
+  border: none;
+  padding: 0 22px;
+  border-radius: var(--r-sm);
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all .2s ease;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(201, 162, 91, .35);
+}
+.btn-magic svg { width: 17px; height: 17px; }
+.btn-magic:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(201, 162, 91, .45);
+  filter: brightness(1.06);
+}
+.magic-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+}
+.ms-label {
+  color: var(--ink-2);
+  font-weight: 600;
+  margin-left: 4px;
+}
+.ms-chip {
+  background: var(--surface-solid);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: all .15s ease;
+}
+.ms-chip:hover {
+  border-color: var(--gold);
+  color: var(--ink);
+  background: var(--gold-soft);
+  transform: translateY(-1px);
+}
+
+/* کارت نتیجه پرامپت جادویی */
+.magic-result-card {
+  margin-top: 20px;
+  background: var(--surface-solid);
+  border: 1.5px solid var(--gold);
+  border-radius: var(--r);
+  box-shadow: 0 12px 32px -10px var(--glow-a);
+  animation: magicFadeIn .25s ease-out;
+  overflow: hidden;
+}
+@keyframes magicFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.mrc-header {
+  padding: 14px 18px;
+  background: linear-gradient(90deg, var(--gold-soft) 0%, var(--surface-2) 100%);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.mrc-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--gold);
+  background: var(--surface-solid);
+  border: 1px solid rgba(201, 162, 91, .3);
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+.mrc-title-wrap {
+  flex: 1;
+}
+.mrc-title-wrap h3 {
+  margin: 0 0 2px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+.mrc-sub {
+  font-size: 0.78rem;
+  color: var(--ink-2);
+}
+.mrc-sub b { color: var(--gold); }
+.mrc-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mrc-body {
+  padding: 16px 18px;
+}
+.mrc-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.mrc-preview {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 16px 18px;
+  max-height: 380px;
+  overflow-y: auto;
+  font-family: inherit;
+  font-size: 0.92rem;
+  line-height: 1.8;
+  color: var(--ink);
+}
+
+/* ==========================================================================
+   میزهای کار تخصصی مشاغل (Workspaces)
+   ========================================================================== */
+.workspace-section {
+  margin-bottom: 24px;
+}
+.workspace-tabs-wrap {
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.workspace-tabs {
+  display: flex;
+  gap: 8px;
+  min-width: max-content;
+}
+.ws-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: var(--r-sm);
+  background: var(--surface-solid);
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s ease;
+}
+.ws-tab svg { width: 17px; height: 17px; color: var(--ink-3); }
+.ws-tab:hover {
+  border-color: var(--gold);
+  color: var(--ink);
+  background: var(--surface-2);
+}
+.ws-tab.active {
+  border-color: var(--gold);
+  background: linear-gradient(135deg, var(--gold-soft) 0%, var(--surface-solid) 100%);
+  color: var(--ink);
+  font-weight: 800;
+  box-shadow: 0 3px 10px -3px var(--glow-a);
+}
+.ws-tab.active svg { color: var(--gold); }
+.ws-count {
+  font-size: 0.72rem;
+  background: var(--surface-2);
+  padding: 2px 7px;
+  border-radius: 12px;
+  color: var(--ink-3);
+}
+.ws-tab.active .ws-count {
+  background: var(--gold);
+  color: #111;
+  font-weight: 800;
+}
+.ws-banner {
+  margin-top: 12px;
+  padding: 14px 18px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-right: 4px solid var(--gold);
+  border-radius: var(--r-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.ws-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+.ws-badge svg { width: 14px; height: 14px; }
+.ws-banner-info h3 {
+  margin: 0 0 2px;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+.ws-banner-info p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+
+/* ==========================================================================
+   چیپ‌های پیشنهاد هوشمند فیلدها (Field Suggestion Chips)
+   ========================================================================== */
+.field-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 7px;
+  padding-top: 4px;
+}
+.fc-label {
+  font-size: 0.72rem;
+  color: var(--ink-3);
+  font-weight: 600;
+}
+.fc-chip {
+  background: var(--surface-2);
+  border: 1px dashed var(--line);
+  border-radius: 16px;
+  padding: 3px 10px;
+  font-family: inherit;
+  font-size: 0.74rem;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: all .15s ease;
+}
+.fc-chip:hover {
+  border-style: solid;
+  border-color: var(--gold);
+  color: var(--gold);
+  background: var(--gold-soft);
+  transform: translateY(-1px);
+}
+
+
