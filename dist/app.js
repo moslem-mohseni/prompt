@@ -87,9 +87,10 @@
   function injectBrandToText(rawText, c, fmt) {
     if (!S.brandInject || cardHasVoice(c)) return rawText;
     var prof = getActiveProfile();
-    var hasBrandInfo = Boolean(prof.role || prof.audience || prof.tone || prof.voice_doc || prof.voice_avoid || prof.voice_use);
+    var hasBrandInfo = Boolean(prof.business || prof.role || prof.audience || prof.tone || prof.voice_doc || prof.voice_avoid || prof.voice_use);
     if (!hasBrandInfo) return rawText;
 
+    var business = prof.business ? String(prof.business).trim() : '';
     var role = prof.role ? String(prof.role).trim() : '';
     var aud = prof.audience ? String(prof.audience).trim() : '';
     var tone = prof.tone ? String(prof.tone).trim() : '';
@@ -98,6 +99,7 @@
 
     if (fmt === 'xml') {
       var brandXml = '  <brand_voice>\n';
+      if (business) brandXml += '    <business>' + business + '</business>\n';
       if (role) brandXml += '    <role>' + role + '</role>\n';
       if (aud) brandXml += '    <audience>' + aud + '</audience>\n';
       if (tone) brandXml += '    <tone>' + tone + '</tone>\n';
@@ -112,7 +114,8 @@
     }
 
     if (fmt === 'markdown') {
-      var brandMd = '### هویت و لحن برند من (Brand Voice)\n';
+      var brandMd = '### مشخصات و لحن برند من\n';
+      if (business) brandMd += '- **حوزه و تخصص:** ' + business + '\n';
       if (role) brandMd += '- **نقش من:** ' + role + '\n';
       if (aud) brandMd += '- **مخاطب هدف:** ' + aud + '\n';
       if (tone) brandMd += '- **لحن کلام:** ' + tone + '\n';
@@ -122,7 +125,8 @@
     }
 
     // text format
-    var lines = ['', '[چارچوب و لحن برند من]:'];
+    var lines = ['', '[مشخصات و لحن برند من]:'];
+    if (business) lines.push('حوزه و تخصص: ' + business);
     if (role) lines.push('نقش من: ' + role);
     if (aud) lines.push('مخاطب: ' + aud);
     if (tone) lines.push('لحن صحبت: ' + tone);
@@ -250,269 +254,8 @@
   }
   window.addEventListener('hashchange', render);
 
-  // ---------- میزهای کار تخصصی مشاغل (Workspaces) ----------
-  var WORKSPACES = {
-    all: {
-      id: 'all',
-      title: 'همه ابزارها',
-      icon: 'grid',
-      badge: 'کتابخانه جامع ۱۰۴ پرامپت',
-      persona: null,
-      desc: 'دسترسی سریع و جامع به تمام ابزارها و کارت‌های بانک پرامپت.'
-    },
-    business: {
-      id: 'business',
-      title: 'کسب‌وکار و فروشگاه',
-      icon: 'target',
-      badge: 'مدیران، فروشگاه‌ها و برندها',
-      persona: 'reza',
-      desc: 'ساخت پیشنهاد رد‌نشدنی، کمپین تخفیف، سناریوی لندینگ، پاسخ به مشتری شاکی، استوری فروش و ایمیل B2B.',
-      cardIds: ['06a-02', '06a-04', '06a-01', '06a-03', '06a-05', '06b-02', '06b-01', '08-02', '03-09', '07b-01', '01-04', '06c-03', '04-03']
-    },
-    therapy: {
-      id: 'therapy',
-      title: 'درمانگران و سلامت روان',
-      icon: 'spark',
-      badge: 'روان‌شناسان، مشاوران و کلینیک‌ها',
-      persona: 'sara',
-      desc: 'فرمول‌بندی کیس بالینی، مداخلات CBT/ACT، بازسازی خطاهای شناختی، طراحی تکالیف خانگی، تریاژ بحران و سناریوی مراجع.',
-      cardIds: ['05-04', '05-06', '04-03', '07c-01', '06c-07', '07b-01', '07b-04', '05-02', '03-12', '03-06', '03-14', '05-05']
-    },
-    creator: {
-      id: 'creator',
-      title: 'تولیدکنندگان محتوا و مدیا',
-      icon: 'chat',
-      badge: 'پادکست، ریلز، بلاگرها و سناریست‌ها',
-      persona: null,
-      desc: 'پادکست‌های دو نفره نوت‌بوک، سناریوی ریلز ۳ قلابه، طوفان فکری ۱۰ زاویه نو، مهندسی پرامپت Midjourney و کپشن‌نویسی.',
-      cardIds: ['05-02', '05-03', '06b-02', '06b-01', '03-08', '03-07', '06b-08', '06d-02', '03-01', '06b-05', '06d-01', '06b-03']
-    },
-    teacher: {
-      id: 'teacher',
-      title: 'معلمان و طراحان آموزشی',
-      icon: 'book',
-      badge: 'آموزش و پرورش، اساتید و مربیان',
-      persona: 'mina',
-      desc: 'طرح درس تعاملی، یادگیری معکوس، تدریس به شیوه سقراطی، آزمون‌های سطوح بلوم و ارزشیابی توصیفی عملکردی.',
-      cardIds: ['05-01', '05-04', '05-05', '05-06', '05-07', '05-10', '08-01', '07b-01', '03-15', '03-16']
-    }
-  };
-
-  // ---------- پیشنهادهای سریع برای فیلدها (Smart Suggestion Chips) ----------
-  var FIELD_SUGGESTIONS = {
-    skip: ['بدون کلیشه و اصطلاحات سنگین', 'بدون مقدمه‌چینی طولانی', 'بدون تئوری‌های انتزاعی', 'بدون لحن بازاریابی و اغراق'],
-    example_kind: ['داستان‌های واقعی و ملموس', 'دیالوگ‌های واقعی روزمره', 'کیس استادی با اعداد و ارقام', 'تمثیل‌های شهودی و ساده'],
-    ending: ['یک چالش عملی ۲۴ ساعته', 'یک سوال تامل‌برانگیز برای ذهن', 'یک تمرین خانگی کوچک و آسان', 'دعوت به اقدام صریح'],
-    audience: ['مبتدی بدون پیش‌زمینه قبلی', 'مدیران و کارشناسان پرمشغله', 'دانشجویان و پژوهشگران', 'عموم مردم و مخاطب عام'],
-    format: ['پاسخ در ۳ بند کوتاه با بولت‌پوینت', 'جدول مقایسه‌ای ستون‌بندی شده', 'راهنمای گام‌به‌گام شماره‌گذاری شده', 'اسکریپت با لحن صمیمانه'],
-    tone: ['صمیمی و همدلانه', 'تخصصی و متکی بر شواهد', 'انگیزشی و پرانرژی', 'رسمی و اداری'],
-    perspective: ['یک منتقد بی‌طرف و واقع‌بین', 'یک مشاور ارشد با تجربه بالا', 'یک مشتری سخت‌گیر و نکته‌سنج'],
-    criterion: ['سادگی در اجرا و کم‌هزینه بودن', 'اثرگذاری عمیق بر مخاطب هدف', 'رعایت اصول علمی و استانداردهای حرفه‌ای']
-  };
-
-  function getFieldSuggestions(f) {
-    if (!f || !f.key) return [];
-    if (FIELD_SUGGESTIONS[f.key]) return FIELD_SUGGESTIONS[f.key];
-    for (var k in FIELD_SUGGESTIONS) {
-      if (f.key.indexOf(k) >= 0) return FIELD_SUGGESTIONS[k];
-    }
-    return [];
-  }
-
-  // ---------- موتور پرامپت جادویی تک‌خطی (Magic Power Engine) ----------
-  var MAGIC_PRESETS = {
-    podcast: {
-      cardId: '05-02',
-      badge: '🎙️ پادکست آموزشی',
-      title: 'سناریوی پادکست عمیق دو نفره یا تک‌نفره',
-      topicField: 'focus',
-      defaults: {
-        audience: 'شنوندگان پرمشغله و علاقه‌مند به یادگیری کاربردی در مسیر رفت‌وآمد و اوقات فراغت',
-        skip: 'اصطلاحات سنگین آکادمیک، مقدمه‌چینی طولانی، تاریخچه‌های خسته‌کننده و توصیه‌های کلیشه‌ای',
-        example_kind: 'داستان‌ها و روایت‌های ملموس از چالش‌های روزمره افراد واقعی در زندگی و کار',
-        ending: 'یک توصیه ۱ دقیقه‌ای و یک چالش عملی ۲۴ ساعته برای شنونده'
-      },
-      topicPrefix: 'بررسی عمیق، علمی و کاربردی پیرامون: '
-    },
-    brainstorm: {
-      cardId: '03-08',
-      badge: '💡 طوفان فکری انفجاری',
-      title: '۲۰ ایده غیرمنتظره از زوایای پنهان و ضدکلیشه',
-      topicField: 'task',
-      defaults: {
-        rules: 'ایده‌ها باید کاملاً متمایز، عملیاتی، کم‌هزینه و بر پایه وارونه‌سازی پیش‌فرض‌های رایج بازار باشند. از ارائه ایده‌های تکراری و متداول اکیداً خودداری شود.'
-      },
-      topicPrefix: 'ایده‌پردازی نوآورانه و کشف زوایای بکر برای: '
-    },
-    cbt: {
-      cardId: '05-04',
-      badge: '🧠 مشاوره و فرمول‌بندی درمانی',
-      title: 'مداخله سقراطی، خطاهای شناختی و تمرین رفتاری',
-      topicField: 'concept',
-      defaults: {
-        role: 'یک سوپروایزر ارشد بالینی با ۲۰ سال سابقه در درمان شناختی-رفتاری (CBT) و شفقت‌درمانی'
-      },
-      topicPrefix: 'فرمول‌بندی بالینی، بازشناسی خطاهای شناختی و طراحی تمرین خانگی برای چالش: '
-    },
-    offer: {
-      cardId: '06a-02',
-      badge: '🛍️ پیشنهاد فروش رد‌نشدنی',
-      title: 'بسته پیشنهادی با ارزش ادراک‌شده بالا (هرموزی)',
-      topicField: 'product',
-      defaults: {
-        goal: 'رسیدن به نرخ تبدیل بالای ۵ درصد، کاهش تردید خرید و ایجاد ارزش ملموس غیرقابل مقایسه',
-        elements: ['بسته ارزش افزوده رایگان', 'ضمانت بازگشت وجه ۱۰۰٪ بدون قید و شرط', 'ارسال فوق‌سریع هدیه', 'سقف ظرفیت محدود زمانی']
-      },
-      topicPrefix: 'محصول یا خدمت: '
-    },
-    reels: {
-      cardId: '06b-02',
-      badge: '🎬 سناریوی ریلز ۳ قلابه',
-      title: 'فیلم‌نامه ویدیوی کوتاه با دکوپاژ و فراخوان تعاملی',
-      topicField: 'topic',
-      defaults: {
-        goal: 'نگه‌داشتن مخاطب در ۳ ثانیه نخست، تعامل بالا در بخش دیدگاه‌ها و ذخیره ویدیو',
-        hooks: [
-          'صبر کن! اگر هنوز این کار رو انجام می‌دی، دقیقاً داری اشتباه می‌کنی...',
-          'بزرگ‌ترین فریبی که درباره‌ش بهت گفتن چیه؟ حقیقت اینه:',
-          '۳ نشانه‌ای که ثابت می‌کنه وقتشه فوراً رویکردت رو عوض کنی:'
-        ]
-      },
-      topicPrefix: 'موضوع تخصصی ویدیو: '
-    },
-    agent: {
-      cardId: '04-03',
-      badge: '🤖 پرامپت سیستم و دستیار هوشمند',
-      title: 'دستورالعمل جامع رفتاری و مرزهای هوشمند ایجنت',
-      topicField: 'goal',
-      defaults: {
-        audience_out: 'مشتریان و مراجعان به دنبال پاسخ سریع، دقیق و انسانی',
-        always: 'پاسخ‌ها را در حداکثر ۳ بند کوتاه، با لحن صمیمانه، شفاف و متکی بر فکت ارائه بده و یک پیشنهاد اقدام بعدی بگذار.',
-        never: 'هرگز ادعای نامعتبر نکن، تعصب نشان نده و اطلاعات هویتی و محرمانه کاربران را افشا نساز.',
-        format: 'پاسخ ساخت‌یافته همراه با بولت‌پوینت‌های خوانا و گام بعدی صریح',
-        incomplete: 'اگر سوال ناقص یا مبهم بود، ابتدا یک سوال روشن‌کننده کوتاه بپرس.',
-        human_contact: 'در صورت تمایل کاربر به ارتباط مستقیم با پشتیبانی یا مدیر تماس حاصل فرمایید.'
-      },
-      topicPrefix: 'پاسخگویی و هدایت تخصصی کاربران پیرامون: '
-    },
-    lesson: {
-      cardId: '05-01',
-      badge: '🎓 طرح درس و یادگیری معکوس',
-      title: 'نقشه یادگیری تعاملی ۴ هفته‌ای با مهارت‌های عملی',
-      topicField: 'topic',
-      defaults: {
-        duration: '۴ هفته، روزی ۴۵ دقیقه یادگیری متمرکز',
-        use: 'تسلط کاربردی برای حل مسائل واقعی بدون نیاز به حفظیات بیهوده',
-        level_now: 'مبتدی و علاقه‌مند، بدون پیش‌زمینه فنی پیچیده'
-      },
-      topicPrefix: 'طرح درس گام‌به‌گام و سناریوهای یادگیری برای: '
-    }
-  };
-
-  function detectMagicIntent(text) {
-    if (!text) return 'podcast';
-    var t = E.normalize(text).toLowerCase();
-    if (/(پادکست|صدا|وویس|شنیدار|podcast|audio)/.test(t)) return 'podcast';
-    if (/(ایده|طوفان|خلاق|نوآور|زاویه|brainstorm|idea)/.test(t)) return 'brainstorm';
-    if (/(درمان|روان|مشاور|مراجع|اضطراب|افسردگ|وسواس|استرس|cbt|تراپی|کیس)/.test(t)) return 'cbt';
-    if (/(فروش|تخفیف|پیشنهاد|کمپین|قیمت|خریدار|مشتری|offer|کافه|رستوران|محصول)/.test(t)) return 'offer';
-    if (/(ریلز|استوری|اینستا|ویدیو|تیک‌تاک|کلیپ|reels|قلاب|hook)/.test(t)) return 'reels';
-    if (/(ایجنت|دستیار|ربات|جمز|gem|چت‌بات|سیستم|bot|agent)/.test(t)) return 'agent';
-    if (/(درس|کلاس|معلم|آموزش|تدریس|مدرسه|دانش‌آموز|امتحان|بلوم)/.test(t)) return 'lesson';
-    return 'brainstorm';
-  }
-
-  var currentMagicResult = null;
-
-  function runMagicPrompt(intentKey, userTopic) {
-    var key = intentKey;
-    if (!key || key === 'auto') {
-      key = detectMagicIntent(userTopic);
-    }
-    var preset = MAGIC_PRESETS[key] || MAGIC_PRESETS.podcast;
-    var c = byId[preset.cardId];
-    if (!c) return null;
-
-    var topic = (userTopic || '').trim();
-    if (!topic) {
-      if (key === 'podcast') topic = 'مدیریت اضطراب و نشخوار فکری در دنیای شلوغ کاری';
-      else if (key === 'brainstorm') topic = 'جذب مشتریان وفادار برای یک کسب‌وکار بومی و آنلاین';
-      else if (key === 'cbt') topic = 'تحریف‌های شناختی فاجعه‌سازی در روابط عاطفی و شغلی';
-      else if (key === 'offer') topic = 'بسته ویژه ارتقای سلامت و بهره‌وری فردی با هدیه اختصاصی';
-      else if (key === 'reels') topic = 'رازهایی که درباره هوش مصنوعی هیچ‌کس به شما نمی‌گوید';
-      else if (key === 'agent') topic = 'مشاوره اختصاصی به مشتریان و راهنمایی هوشمند سبد خرید';
-      else if (key === 'lesson') topic = 'مبانی تفکر نقادانه و حل مسئله خلاقانه در کار و زندگی';
-    }
-
-    var vals = Object.assign({}, preset.defaults);
-    vals[preset.topicField] = (preset.topicPrefix || '') + topic;
-
-    var labels = {};
-    c.fields.forEach(function (f) {
-      if (!vals[f.key] && f.default !== undefined) vals[f.key] = f.default;
-      if (f.type === 'select') labels[f.key] = optLabel(f, vals[f.key]);
-      if (f.type === 'multi') labels[f.key] = (vals[f.key] || []).map(function (x) { return optLabel(f, x); });
-    });
-
-    var rendered = '';
-    try {
-      rendered = E.render(c.template, vals, labels, { lang: c.lang_out });
-    } catch (e) {
-      rendered = c.template;
-    }
-
-    S.vals[c.id] = vals;
-    persist();
-
-    var outText = injectBrandToText(E.toPlain(rendered), c, 'text');
-    var outMd = injectBrandToText(E.toMarkdown(rendered), c, 'markdown');
-    var outXml = injectBrandToText(E.toXml(rendered), c, 'xml');
-
-    currentMagicResult = {
-      card: c,
-      preset: preset,
-      topic: topic,
-      text: outText,
-      markdown: outMd,
-      xml: outXml,
-      fmt: currentFmt || 'text'
-    };
-
-    return currentMagicResult;
-  }
-
-  function magicOutputHtml(mr) {
-    if (!mr) return '';
-    var activeContent = mr[mr.fmt] || mr.text;
-    return '<div class="magic-result-card">' +
-      '<div class="mrc-header">' +
-      '  <div class="mrc-badge">' + mr.preset.badge + '</div>' +
-      '  <div class="mrc-title-wrap">' +
-      '    <h3>' + h(mr.preset.title) + '</h3>' +
-      '    <span class="mrc-sub">مبتنی بر کارت الگوی <b>«' + h(mr.card.title) + '»</b> (' + fa(mr.card.id) + ')</span>' +
-      '  </div>' +
-      '  <div class="mrc-actions">' +
-      '    <a href="#/p/' + mr.card.id + '" class="btn btn-outline small" title="شخصی‌سازی دقیق تمام فیلدها در صفحه پرامپت">' + ic('edit') + 'شخصی‌سازی بیشتر</a>' +
-      '    <button type="button" class="btn-icon" data-act="magic-close" aria-label="بستن">' + ic('close') + '</button>' +
-      '  </div>' +
-      '</div>' +
-      '<div class="mrc-body">' +
-      '  <div class="mrc-toolbar">' +
-      '    <div class="format-chips-wrap">' +
-      '      <span class="fc-label">فرمت خروجی:</span>' +
-      '      <button type="button" class="fmt-chip' + (mr.fmt === 'text' ? ' active' : '') + '" data-act="magic-fmt" data-fmt="text">' + ic('text') + 'متن</button>' +
-      '      <button type="button" class="fmt-chip' + (mr.fmt === 'markdown' ? ' active' : '') + '" data-act="magic-fmt" data-fmt="markdown">' + ic('markdown') + 'مارکداون</button>' +
-      '      <button type="button" class="fmt-chip' + (mr.fmt === 'xml' ? ' active' : '') + '" data-act="magic-fmt" data-fmt="xml">' + ic('code') + 'XML ساختاریافته</button>' +
-      '    </div>' +
-      '    <button type="button" class="btn btn-primary" data-act="magic-copy">' + ic('copy') + '<b>کپی پرامپت غول‌پیکر</b></button>' +
-      '  </div>' +
-      '  <div class="mrc-preview" dir="auto">' + linesHtml(activeContent) + '</div>' +
-      '</div>' +
-      '</div>';
-  }
-
   // ---------- صفحه‌ی اصلی ----------
-  var home = { q: '', cat: '', priv: '', ws: 'all' };
+  var home = { q: '', cat: '', priv: '' };
   function tile(c) {
     var tool = B.tools.tools[c.tool];
     var tags = '';
@@ -529,78 +272,16 @@
       '<p>' + h(c.desc) + '</p>' +
       '<div class="meta">' + tags + '</div></a>';
   }
-  function brandEmpty() { return !['role', 'audience', 'tone', 'voice_doc', 'brand_colors'].some(function (k) { return !E.isEmpty(S.profile[k]); }); }
-  function magicHubHtml() {
-    return '<section class="magic-hub">' +
-      '<div class="magic-header">' +
-      '  <div class="magic-badge">' + ic('spark') + 'موتور پرامپت جادویی تک‌خطی</div>' +
-      '  <h2>فقط یک جمله بگو چی می‌خوای؛ پرامپت غول‌پیکرت آماده است!</h2>' +
-      '  <p>بدون فرم‌های پیچیده؛ موضوع را بنویس یا از دکمه‌های سریع انتخاب کن تا قدرتمندترین پرامپت با سنجه‌ها و پیش‌فرض‌های طلایی ساخته شود.</p>' +
-      '</div>' +
-      '<div class="magic-input-wrap">' +
-      '  <div class="magic-input-box">' +
-      '    ' + ic('spark') +
-      '    <input type="text" id="magic-input" autocomplete="off" placeholder="مثلاً: پادکست درباره اضطراب، یا ایده برای جذب مشتری کافه، یا تکلیف CBT برای وسواس..." />' +
-      '  </div>' +
-      '  <button type="button" class="btn btn-magic" data-act="magic-run" data-key="auto">' + ic('spark') + '<b>ساخت پرامپت غول ↵</b></button>' +
-      '</div>' +
-      '<div class="magic-shortcuts">' +
-      '  <span class="ms-label">دسترسی‌های انفجاری با یک کلیک:</span>' +
-      '  <button type="button" class="ms-chip" data-act="magic-run" data-key="podcast">🎙️ پادکست آموزشی</button>' +
-      '  <button type="button" class="ms-chip" data-act="magic-run" data-key="brainstorm">💡 طوفان فکری و ۲۰ ایده</button>' +
-      '  <button type="button" class="ms-chip" data-act="magic-run" data-key="cbt">🧠 درمان و فرمول‌بندی کیس</button>' +
-      '  <button type="button" class="ms-chip" data-act="magic-run" data-key="offer">🛍️ پیشنهاد فروش رد‌نشدنی</button>' +
-      '  <button type="button" class="ms-chip" data-act="magic-run" data-key="reels">🎬 سناریوی ریلز ۳ قلابه</button>' +
-      '  <button type="button" class="ms-chip" data-act="magic-run" data-key="agent">🤖 پرامپت سیستم و ایجنت</button>' +
-      '  <button type="button" class="ms-chip" data-act="magic-run" data-key="lesson">🎓 طرح درس و یادگیری</button>' +
-      '</div>' +
-      '<div id="magic-output-container">' + (currentMagicResult ? magicOutputHtml(currentMagicResult) : '') + '</div>' +
-      '</section>';
-  }
-
-  function workspaceBarHtml() {
-    var wsKeys = ['all', 'business', 'therapy', 'creator', 'teacher'];
-    var tabsHtml = wsKeys.map(function (k) {
-      var ws = WORKSPACES[k];
-      var isAct = home.ws === k;
-      var count = k === 'all' ? B.cards.length : (ws.cardIds || []).length;
-      return '<button type="button" class="ws-tab' + (isAct ? ' active' : '') + '" data-act="switch-ws" data-ws="' + k + '">' +
-        ic(ws.icon) + '<span>' + h(ws.title) + '</span>' +
-        '<span class="ws-count">' + fa(count) + '</span>' +
-        '</button>';
-    }).join('');
-
-    var activeWs = WORKSPACES[home.ws] || WORKSPACES.all;
-    var banner = '';
-    if (home.ws !== 'all') {
-      banner = '<div class="ws-banner">' +
-        '<div class="ws-banner-info">' +
-        '  <span class="ws-badge">' + ic(activeWs.icon) + h(activeWs.badge) + '</span>' +
-        '  <h3>' + h(activeWs.title) + '</h3>' +
-        '  <p>' + h(activeWs.desc) + '</p>' +
-        '</div>' +
-        '<button type="button" class="btn btn-outline small" data-act="switch-ws" data-ws="all">' + ic('close') + 'نمایش همه پرامپت‌ها</button>' +
-        '</div>';
-    }
-
-    return '<div class="workspace-section">' +
-      '<div class="workspace-tabs-wrap">' +
-      '  <div class="workspace-tabs">' + tabsHtml + '</div>' +
-      '</div>' +
-      banner +
-      '</div>';
-  }
+  function brandEmpty() { return !['role', 'audience', 'tone', 'business'].some(function (k) { return !E.isEmpty(S.profile[k]); }); }
 
   function viewHome(r) {
     document.title = 'بانک پرامپت';
     if (r.q.q !== undefined) home.q = r.q.q;
-    if (r.q.ws !== undefined && WORKSPACES[r.q.ws]) home.ws = r.q.ws;
+    if (r.q.cat !== undefined) home.cat = r.q.cat;
     var total = B.cards.length;
     var html = '<section class="hero"><div class="eyebrow">' + fa(total) + ' پرامپت آماده · خصوصی روی همین دستگاه</div>' +
-      '<h1>پرامپت درست را پیدا کنید،<br><em>شخصی کنید و کپی کنید.</em></h1>' +
-      '<p>فرم کوتاه هر پرامپت را پر کنید؛ متن نهایی همان لحظه در سه قالب آماده‌ی کپی است.</p></section>' +
-      magicHubHtml() +
-      workspaceBarHtml() +
+      '<h1>بانک پرامپت‌های آماده و استاندارد</h1>' +
+      '<p>پرامپت مورد نظرتان را پیدا کنید، فرم ساده‌اش را پر کنید یا از نمونه‌های واقعی استفاده کنید؛ متن نهایی در سه قالب آماده‌ی کپی است.</p></section>' +
       '<div class="search">' + ic('search') +
       '<input id="q" type="search" autocomplete="off" enterkeyhint="search" aria-label="جست‌وجوی پرامپت" placeholder="جست‌وجو: پادکست، ریلز، درمان، فروش، کپشن، اسلاید، ایمیل… (کلید /)" value="' + h(home.q) + '">' +
       '<button id="q-clear" class="search-clear" data-act="q-clear" aria-label="پاک کردن جست‌وجو" style="' + (home.q ? '' : 'display:none;') + '">' + ic('close') + '</button>' +
@@ -620,7 +301,7 @@
       '</div></div>';
 
     if (brandEmpty()) {
-      html += '<a class="callout" href="#/brand"><span class="ico">' + ic('diamond') + '</span><span><b>برند من را یک بار پر کنید</b><span>مخاطب، لحن و رنگ‌هایتان خودکار در پرامپت‌ها می‌نشیند.</span></span><span class="go">' + ic('fwd') + '</span></a>';
+      html += '<a class="callout" href="#/brand"><span class="ico">' + ic('diamond') + '</span><span><b>برند من را یک بار تنظیم کنید</b><span>تخصص، مخاطب و لحن شما خودکار به پرامپت‌ها اضافه می‌شود.</span></span><span class="go">' + ic('fwd') + '</span></a>';
     }
     html += '<div id="results"></div>';
     main.innerHTML = html;
@@ -630,11 +311,7 @@
     var box = $('#results');
     if (!box) return;
     var toks = E.normalize(home.q).split(' ').filter(Boolean);
-    var activeWs = WORKSPACES[home.ws] || WORKSPACES.all;
     var list = B.cards.filter(function (c) {
-      if (home.ws && home.ws !== 'all' && activeWs.cardIds) {
-        if (activeWs.cardIds.indexOf(c.id) < 0) return false;
-      }
       if (home.cat && c.category !== home.cat) return false;
       if (home.priv && c.privacy !== home.priv) return false;
       return true;
@@ -878,61 +555,66 @@
     };
   }
 
-  // ---------- هاب یکپارچه‌سازی برند من ----------
-  function brandHubHtml(c) {
+  // ---------- راهنمای جمع‌وجور و سبک پرامپت ----------
+  function simpleGuideHtml(c) {
+    var g = getCardGuidance(c);
+    return '<details class="simple-guide">' +
+      '<summary><span class="sg-icon">💡</span> <b>راهنمای کاربردی این پرامپت (کاربرد، خروجی و نکته)</b></summary>' +
+      '<div class="simple-guide-body">' +
+      '  <div class="sg-row"><span class="sg-lbl">🎯 کاربرد:</span> <span class="sg-txt">' + h(g.use) + '</span></div>' +
+      '  <div class="sg-row"><span class="sg-lbl">📦 خروجی:</span> <span class="sg-txt">' + h(g.output) + '</span></div>' +
+      '  <div class="sg-row"><span class="sg-lbl">✨ نکته طلایی:</span> <span class="sg-txt">' + h(g.tip) + '</span></div>' +
+      '</div></details>';
+  }
+
+  // ---------- نوار وضعیت اتصال برند من ----------
+  function brandBarHtml(c) {
     var prof = getActiveProfile();
-    var hasInfo = Boolean(prof.role || prof.audience || prof.tone || prof.voice_doc || prof.voice_avoid || prof.voice_use);
-    var pName = getActivePersonaName();
-    var hasVoiceInTemplate = cardHasVoice(c);
-
-    var personasList = B.personas ? Object.keys(B.personas).filter(function (k) { return k !== '_note'; }) : [];
-    var switcher = '<div class="brand-persona-pills">' +
-      '<span class="bpp-label">لحن فعال:</span>' +
-      '<button type="button" class="bpp-btn' + (!S.activePersona ? ' active' : '') + '" data-act="switch-persona" data-p="" title="استفاده از اطلاعات برند خودتان">★ برند من</button>' +
-      personasList.map(function (k) {
-        var per = B.personas[k];
-        return '<button type="button" class="bpp-btn' + (S.activePersona === k ? ' active' : '') + '" data-act="switch-persona" data-p="' + k + '" title="' + h(per.desc) + '">' + h(per.name) + '</button>';
-      }).join('') +
-      '</div>';
-
-    if (hasInfo) {
-      var chips = '';
-      if (prof.role) chips += '<span class="bchip" title="نقش برند"><b>نقش:</b> ' + h(prof.role) + '</span>';
-      if (prof.tone) chips += '<span class="bchip" title="لحن برند"><b>لحن:</b> ' + h(prof.tone) + '</span>';
-      if (prof.audience) chips += '<span class="bchip bchip-wide" title="مخاطب برند"><b>مخاطب:</b> ' + h(prof.audience) + '</span>';
-
-      var toggleHtml = '';
-      if (!hasVoiceInTemplate) {
-        toggleHtml = '<label class="brand-inject-toggle">' +
-          '<input type="checkbox" data-act="toggle-brand-inject"' + (S.brandInject ? ' checked' : '') + '>' +
-          '<span>تزریق امضا و مشخصات برند به خروجی پرامپت</span>' +
-          '</label>';
-      } else {
-        toggleHtml = '<span class="brand-inject-note">' + ic('check') + 'سند لحن برند مستقیماً درون فیلد فرم و قالب پرامپت قرار گرفته است.</span>';
-      }
-
-      return '<div class="brand-hub brand-connected">' +
-        '<div class="brand-hub-top">' +
-        '  <div class="brand-hub-status">' + ic('diamond') + '<span>متصل به: <b>' + h(pName) + '</b></span></div>' +
-        '  <a class="link-btn small" href="#/brand">ویرایش برند من</a>' +
-        '</div>' +
-        '<div class="brand-chips">' + chips + '</div>' +
-        '<div class="brand-hub-bottom">' + toggleHtml + switcher + '</div>' +
+    var hasBrand = Boolean(prof.business || prof.role || prof.audience || prof.tone);
+    if (!hasBrand) {
+      return '<div class="brand-bar empty">' +
+        '<div class="bb-info">' + ic('diamond') + '<span>مشخصات برند شما هنوز ثبت نشده است.</span></div>' +
+        '<a class="btn btn-line small" href="#/brand">تنظیم مشخصات برند من</a>' +
         '</div>';
     }
-
-    // برند هنوز خالی است
-    return '<div class="brand-hub brand-empty">' +
-      '<div class="brand-hub-top">' +
-      '  <div class="brand-hub-status empty-status">' + ic('spark') + '<b>این پرامپت با اطلاعات برند شما شخصی‌سازی می‌شود</b></div>' +
-      '  <a class="btn btn-gold small" href="#/brand">تنظیم برند من</a>' +
-      '</div>' +
-      '<p class="brand-hub-desc">وقتی لحن و مخاطب خود را اضافه کنید، خروجی هوش مصنوعی از حالت کلیشه‌ای خارج می‌شود. برای دیدن تفاوت، یک نمونه از کارگاه را امتحان کنید:</p>' +
-      switcher +
+    var brandTitle = prof.business || prof.role || 'برند من';
+    return '<div class="brand-bar connected">' +
+      '<label class="brand-inject-label">' +
+      '  <input type="checkbox" data-act="toggle-brand-inject"' + (S.brandInject ? ' checked' : '') + '>' +
+      '  <span>' + ic('diamond') + 'افزودن امضای برند من به این پرامپت <b>(' + h(brandTitle) + ')</b></span>' +
+      '</label>' +
+      '<a class="link-btn small" href="#/brand">ویرایش برند</a>' +
       '</div>';
   }
 
-  // ---------- صفحه‌ی پرامپت ----------
+  // ---------- نوار نمونه‌های پرشده آماده (ساده و مرتب) ----------
+  function quickSamplesHtml(c) {
+    if (!c.fields || !c.fields.length) return '';
+    var exKeys = Object.keys(c.examples || {});
+    if (!exKeys.length && c.fields.some(function (f) { return f.profile; })) {
+      exKeys = ['sara', 'reza', 'mina'];
+    }
+    if (!exKeys.length) return '';
+
+    var personaMeta = {
+      sara: { name: 'سارا (روان‌درمانگر)', icon: '🌱' },
+      reza: { name: 'رضا (کسب‌وکار و فروش)', icon: '☕' },
+      mina: { name: 'مینا (آموزش و مشاوره)', icon: '🎓' }
+    };
+
+    return '<div class="quick-samples-bar">' +
+      '<span class="qsb-label">' + ic('spark') + 'نمونه‌ی پرشده:</span>' +
+      exKeys.map(function (pk) {
+        var m = personaMeta[pk] || { name: pk, icon: '⚡' };
+        var isCurrent = S.activePersona === pk;
+        return '<button type="button" class="qsb-btn' + (isCurrent ? ' active' : '') + '" data-act="load-sample" data-p="' + pk + '" title="پر کردن فرم با سناریوی ' + h(m.name) + '">' +
+          m.icon + ' ' + h(m.name) + '</button>';
+      }).join('') +
+      '<button type="button" class="qsb-clear" data-act="clear" title="پاک کردن فیلدهای فرم">پاک کردن فرم</button>' +
+      '</div>';
+  }
+
+  // ---------- فیلدهای فرم (ساده، خلوت و آرام) ----------
   function fieldHtml(c, f) {
     var v = value(c, f), id = 'f_' + f.key;
     var auto = fromBrand(c, f) ? '<span class="auto">از برند من</span>' : '';
@@ -940,22 +622,14 @@
     var help = f.help ? '<div class="help">' + h(f.help) + '</div>' : '';
     var ph = f.example ? ' placeholder="' + h('مثلاً ' + f.example) + '"' : '';
 
-    var brandActions = '';
-    if (f.profile) {
-      brandActions = '<div class="field-brand-actions">' +
-        '<button type="button" class="field-action-btn" data-act="reset-field-brand" data-k="' + f.key + '" data-p="' + f.profile + '" title="بازنشانی متن این فیلد به اصل متن موجود در برند من">بازنشانی به اصل برند</button>' +
-        '<button type="button" class="field-action-btn" data-act="save-field-brand" data-k="' + f.key + '" data-p="' + f.profile + '" title="ذخیره متن این فیلد در مشخصات برند من">ذخیره در برند من</button>' +
-        '</div>';
-    }
-
     if (f.type === 'select') {
-      return '<div class="field"><label for="' + id + '">' + h(f.label) + req + auto + brandActions + '</label>' + help + '<select id="' + id + '" data-k="' + f.key + '">' +
+      return '<div class="field"><label for="' + id + '">' + h(f.label) + req + auto + '</label>' + help + '<select id="' + id + '" data-k="' + f.key + '">' +
         (f.default == null ? '<option value="">انتخاب کنید</option>' : '') +
         f.options.map(function (o) { return '<option value="' + h(o.value) + '"' + (o.value === v ? ' selected' : '') + '>' + h(o.label) + '</option>'; }).join('') + '</select></div>';
     }
     if (f.type === 'multi') {
       var arr = Array.isArray(v) ? v : [];
-      return '<div class="field"><span class="lbl">' + h(f.label) + req + auto + brandActions + '</span>' + help + '<div class="checks">' + f.options.map(function (o, i) {
+      return '<div class="field"><span class="lbl">' + h(f.label) + req + auto + '</span>' + help + '<div class="checks">' + f.options.map(function (o, i) {
         return '<label class="check"><input type="checkbox" data-k="' + f.key + '" data-i="' + i + '"' + (arr.indexOf(o.value) >= 0 ? ' checked' : '') + '><span>' + h(o.label) + '</span></label>';
       }).join('') + '</div></div>';
     }
@@ -963,94 +637,22 @@
       var items = Array.isArray(v) ? v : (E.isEmpty(v) ? [] : [v]);
       var n = Math.max(f.count || 3, items.length), out = '';
       for (var i = 0; i < n; i++) out += '<textarea data-k="' + f.key + '" data-r="' + i + '" aria-label="' + h(f.label + ' ' + fa(i + 1)) + '" placeholder="' + h((f.item_label || 'مورد') + ' ' + fa(i + 1)) + '">' + h(items[i] || '') + '</textarea>';
-      return '<div class="field"><span class="lbl">' + h(f.label) + req + auto + brandActions + '</span>' + help + '<div class="stack">' + out + '</div></div>';
-    }
-    var suggestions = getFieldSuggestions(f);
-    var chipsHtml = '';
-    if (suggestions.length && (f.type === 'textarea' || !f.type || f.type === 'text')) {
-      chipsHtml = '<div class="field-chips" aria-label="پیشنهادهای سریع">' +
-        '<span class="fc-label">پیشنهاد سریع:</span>' +
-        suggestions.map(function (s) {
-          return '<button type="button" class="fc-chip" data-act="apply-chip" data-k="' + f.key + '" data-val="' + h(s) + '">' + h(s) + '</button>';
-        }).join('') +
-        '</div>';
+      return '<div class="field"><span class="lbl">' + h(f.label) + req + auto + '</span>' + help + '<div class="stack">' + out + '</div></div>';
     }
 
     var input = f.type === 'textarea'
       ? '<textarea id="' + id + '" data-k="' + f.key + '"' + ph + '>' + h(v) + '</textarea>'
       : '<input id="' + id + '" type="text"' + (f.type === 'number' ? ' inputmode="decimal"' : '') + ' data-k="' + f.key + '" value="' + h(v) + '"' + ph + '>';
-    return '<div class="field"><label for="' + id + '">' + h(f.label) + req + auto + brandActions + '</label>' + help + input + chipsHtml + '</div>';
-  }
-  // ---------- هاب نمونه‌های طلایی و واقعی (غول پرامپت) ----------
-  function goldenSamplesHubHtml(c) {
-    if (!c.fields || !c.fields.length) return '';
-    var exKeys = Object.keys(c.examples || {});
-    if (!exKeys.length && c.fields.some(function (f) { return f.profile; })) {
-      exKeys = ['reza', 'sara', 'mina'];
-    }
-    if (!exKeys.length) return '';
-
-    var personaMeta = {
-      reza: {
-        name: 'رضا',
-        role: 'فروشگاه دمنوش و ادویه',
-        domain: 'کسب‌وکار، محصول فیزیکی و کمپین فروش',
-        badge: 'کسب‌وکار',
-        icon: '☕'
-      },
-      sara: {
-        name: 'سارا',
-        role: 'کلینیک روان‌درمانی',
-        domain: 'خدمات تخصصی، سلامت و مراجعان',
-        badge: 'خدمات تخصصی',
-        icon: '🌱'
-      },
-      mina: {
-        name: 'مینا',
-        role: 'آکادمی آموزش و کوچینگ',
-        domain: 'آموزش، دانشگاه و کار تیمی',
-        badge: 'آموزش و B2B',
-        icon: '🎓'
-      }
-    };
-
-    var cardsHtml = exKeys.map(function (pk) {
-      var meta = personaMeta[pk] || {
-        name: pk,
-        role: 'سناریوی کاربردی آماده',
-        domain: 'نمونه‌ی واقعی کارگاه',
-        badge: 'سناریوی آماده',
-        icon: '⚡'
-      };
-      var isCurrent = S.activePersona === pk;
-      return '<button type="button" class="gsh-card' + (isCurrent ? ' active' : '') + '" data-act="load-sample" data-p="' + pk + '" title="بارگذاری کامل سناریوی پرجزئیات ' + h(meta.name) + '">' +
-        '<div class="gsh-card-head">' +
-        '  <span class="gsh-card-badge">' + meta.icon + ' ' + h(meta.badge) + '</span>' +
-        '  <span class="gsh-card-trigger">بارگذاری در فرم ↵</span>' +
-        '</div>' +
-        '<strong class="gsh-card-name">نمونه‌ی ' + h(meta.name) + '</strong>' +
-        '<span class="gsh-card-role">' + h(meta.role) + '</span>' +
-        '<span class="gsh-card-domain">' + h(meta.domain) + '</span>' +
-        '</button>';
-    }).join('');
-
-    return '<div class="golden-samples-hub">' +
-      '<div class="gsh-header">' +
-      '  <div class="gsh-title-box">' +
-      '    <div class="gsh-pill">' + ic('spark') + '<span>غول پرامپت‌های کارگاه</span></div>' +
-      '    <h4>نمونه‌های واقعی و آماده‌ی کپی (Power Prompts)</h4>' +
-      '    <p>با یک کلیک، تمام فیلدها با سناریوی کامل، جزئیات واقعی و قیدهای دقیق پر می‌شوند تا مدل بالاترین کیفیت خروجی را بدهد.</p>' +
-      '  </div>' +
-      '</div>' +
-      '<div class="gsh-grid">' + cardsHtml + '</div>' +
-      '</div>';
+    return '<div class="field"><label for="' + id + '">' + h(f.label) + req + auto + '</label>' + help + input + '</div>';
   }
 
   function exampleOf(c) {
     var ps = Object.keys(c.examples || {});
-    if (!ps.length && c.fields.some(function (f) { return f.profile; })) ps = ['reza'];
+    if (!ps.length && c.fields.some(function (f) { return f.profile; })) ps = ['sara', 'reza'];
     return ps[0] || null;
   }
+
+  // ---------- صفحه‌ی پرامپت ----------
   function viewPrompt(r) {
     var c = byId[r.id];
     if (!c) { location.hash = '#/'; return; }
@@ -1059,77 +661,58 @@
     var app = tool && tool.first.length ? B.tools.apps[tool.first[0]] : null;
     var tags = '<span class="tag cat-tag">' + h(catOf(c).title) + '</span>';
     if (tool && tool.first.length) tags += '<span class="tag">' + h(tool.label) + '</span>';
-    if (c.privacy === 'red') tags += '<span class="tag red">' + ic('shield') + 'حساس: فقط متن ناشناس‌شده، در چت موقت</span>';
-    else if (c.privacy === 'yellow') tags += '<span class="tag amber">' + ic('shield') + 'داده‌ی کسب‌وکار: فقط حداقل لازم، نه در Arena</span>';
-    else tags += '<span class="tag green">' + ic('shield') + 'داده‌ی عمومی (سبز)</span>';
-
-    var g = getCardGuidance(c);
-    var guideHtml = '<section class="prompt-guide-card">' +
-      '<div class="pg-head">' +
-      '  <div class="pg-title">' + ic('spark') + '<h3>راهنمای کاربردی این پرامپت</h3></div>' +
-      '  <span class="pg-badge">شفاف‌سازی و راهنما</span>' +
-      '</div>' +
-      '<div class="pg-grid">' +
-      '  <div class="pg-item">' +
-      '    <div class="pg-label">🎯 این پرامپت برای چیست و کی استفاده کنیم؟</div>' +
-      '    <div class="pg-text">' + h(g.use) + '</div>' +
-      '  </div>' +
-      '  <div class="pg-item">' +
-      '    <div class="pg-label">📦 هوش مصنوعی دقیقاً چه تحویلی می‌دهد؟</div>' +
-      '    <div class="pg-text">' + h(g.output) + '</div>' +
-      '  </div>' +
-      '  <div class="pg-item">' +
-      '    <div class="pg-label">💡 راز نتیجه‌ی عالی (نکته‌ی طلایی کارگاه)</div>' +
-      '    <div class="pg-text">' + h(g.tip) + '</div>' +
-      '  </div>' +
-      '</div></section>';
+    if (c.privacy === 'red') tags += '<span class="tag red">' + ic('shield') + 'حساس: در چت موقت</span>';
+    else if (c.privacy === 'yellow') tags += '<span class="tag amber">' + ic('shield') + 'داده‌ی کسب‌وکار</span>';
+    else tags += '<span class="tag green">' + ic('shield') + 'داده‌ی عمومی</span>';
 
     var html = '<a class="back" href="#/">' + ic('back') + 'همه‌ی پرامپت‌ها</a>' +
-      '<div class="phead"><div class="phead-title"><h1>' + h(c.title) + '</h1><span class="phead-id">' + fa(c.id) + '</span></div>' +
-      '<p>' + h(c.desc) + '</p><div class="tags">' + tags + '</div></div>' +
-      guideHtml +
-      '<div class="split">';
-
-    var samplesHub = goldenSamplesHubHtml(c);
-    html += '<section class="panel">' +
-      brandHubHtml(c) +
-      samplesHub +
-      '<div class="panel-head"><h2>متغیرها و فرم پرامپت</h2><div>' +
-      '<button class="link-btn muted" data-act="clear">پاک کردن فرم</button></div></div>' +
+      '<div class="phead">' +
+      '  <div class="phead-title"><h1>' + h(c.title) + '</h1><span class="phead-id">' + fa(c.id) + '</span></div>' +
+      '  <p>' + h(c.desc) + '</p>' +
+      '  <div class="tags">' + tags + '</div>' +
+      '</div>' +
+      simpleGuideHtml(c) +
+      brandBarHtml(c) +
+      '<div class="split">' +
+      '  <section class="panel form-panel">' +
+      quickSamplesHtml(c) +
+      '    <div class="panel-head"><h2>متغیرهای پرامپت</h2><div>' +
+      '      <button class="link-btn muted" data-act="clear">پاک کردن فرم</button>' +
+      '    </div></div>' +
       (c.fields.length ? c.fields.map(function (f) { return fieldHtml(c, f); }).join('') : '<p class="muted">این پرامپت متغیری ندارد و آماده‌ی کپی مستقیم است.</p>') +
-      '</section>';
-
-    html += '<section class="pv"><div class="paper">' +
-      '<div class="paper-head">' +
-      '  <div class="format-tabs" role="tablist" aria-label="قالب پرامپت">' +
-      '    <button class="format-tab' + (currentFmt === 'text' ? ' active' : '') + '" data-act="preview-fmt" data-fmt="text" role="tab" aria-selected="' + (currentFmt === 'text') + '">' + ic('text') + 'متن پرامپت</button>' +
-      '    <button class="format-tab' + (currentFmt === 'markdown' ? ' active' : '') + '" data-act="preview-fmt" data-fmt="markdown" role="tab" aria-selected="' + (currentFmt === 'markdown') + '">' + ic('markdown') + 'مارکداون (Markdown)</button>' +
-      '    <button class="format-tab' + (currentFmt === 'xml' ? ' active' : '') + '" data-act="preview-fmt" data-fmt="xml" role="tab" aria-selected="' + (currentFmt === 'xml') + '">' + ic('code') + 'ساختاریافته (XML)</button>' +
-      '  </div>' +
-      '  <span class="paper-meta"><span id="wc" class="wc-badge"></span></span>' +
-      '</div>' +
-      '<div class="prompt" id="pv"></div><div class="missing" id="miss"></div>' +
+      '  </section>' +
+      '  <section class="pv"><div class="paper">' +
+      '    <div class="paper-head">' +
+      '      <div class="format-tabs" role="tablist" aria-label="قالب پرامپت">' +
+      '        <button class="format-tab' + (currentFmt === 'text' ? ' active' : '') + '" data-act="preview-fmt" data-fmt="text" role="tab" aria-selected="' + (currentFmt === 'text') + '">' + ic('text') + 'متن پرامپت</button>' +
+      '        <button class="format-tab' + (currentFmt === 'markdown' ? ' active' : '') + '" data-act="preview-fmt" data-fmt="markdown" role="tab" aria-selected="' + (currentFmt === 'markdown') + '">' + ic('markdown') + 'مارکداون (Markdown)</button>' +
+      '        <button class="format-tab' + (currentFmt === 'xml' ? ' active' : '') + '" data-act="preview-fmt" data-fmt="xml" role="tab" aria-selected="' + (currentFmt === 'xml') + '">' + ic('code') + 'ساختاریافته (XML)</button>' +
+      '      </div>' +
+      '      <span class="paper-meta"><span id="wc" class="wc-badge"></span></span>' +
+      '    </div>' +
+      '    <div class="prompt" id="pv"></div><div class="missing" id="miss"></div>' +
       (c.gloss ? '<details class="gloss"><summary>ترجمه برای خودتان</summary><div class="prompt" id="gl"></div></details>' : '') +
-      '<div class="copy-section">' +
-      '  <div class="copy-section-title">کپی پرامپت در سه قالب:</div>' +
-      '  <div class="copy-grid">' +
-      '    <button class="btn btn-gold copy-btn' + (currentFmt === 'text' ? ' btn-active-fmt' : '') + '" data-act="copy" data-fmt="text" title="کپی متن مستقیم پرامپت">' +
-      '      <span class="btn-ic">' + ic('text') + '</span><span class="btn-txt">کپی متن پرامپت</span>' +
-      '    </button>' +
-      '    <button class="btn btn-glass copy-btn' + (currentFmt === 'markdown' ? ' btn-active-fmt' : '') + '" data-act="copy" data-fmt="markdown" title="کپی با تیترها و قالب مارکداون">' +
-      '      <span class="btn-ic">' + ic('markdown') + '</span><span class="btn-txt">کپی با فرمت مارکداون</span>' +
-      '    </button>' +
-      '    <button class="btn btn-glass copy-btn' + (currentFmt === 'xml' ? ' btn-active-fmt' : '') + '" data-act="copy" data-fmt="xml" title="کپی با تگ‌های ساختاریافته XML">' +
-      '      <span class="btn-ic">' + ic('code') + '</span><span class="btn-txt">کپی با فرمت XML</span>' +
-      '    </button>' +
-      '  </div>' +
-      '</div>' +
-      '<div class="actions secondary-actions">' +
-      '  <button class="btn btn-glass small" data-act="save">' + ic('save') + '<span>ذخیره در این دستگاه</span></button>' +
-      (c.link ? '  <a class="btn btn-glass small" href="' + h(c.link) + '" target="_blank" rel="noopener noreferrer">' + ic('out') + '<span>باز کردن Gem</span></a>' : '') +
-      (app ? '  <a class="btn btn-glass small" href="' + h(app.url) + '" target="_blank" rel="noopener noreferrer">' + ic('out') + '<span>باز کردن ' + h(app.name) + '</span></a>' : '') +
-      '</div>' +
-      '</div></section></div>';
+      '    <div class="copy-section">' +
+      '      <div class="copy-section-title">کپی پرامپت در سه قالب:</div>' +
+      '      <div class="copy-grid">' +
+      '        <button class="btn btn-gold copy-btn' + (currentFmt === 'text' ? ' btn-active-fmt' : '') + '" data-act="copy" data-fmt="text" title="کپی متن مستقیم پرامپت">' +
+      '          <span class="btn-ic">' + ic('text') + '</span><span class="btn-txt">کپی متن پرامپت</span>' +
+      '        </button>' +
+      '        <button class="btn btn-glass copy-btn' + (currentFmt === 'markdown' ? ' btn-active-fmt' : '') + '" data-act="copy" data-fmt="markdown" title="کپی با تیترها و قالب مارکداون">' +
+      '          <span class="btn-ic">' + ic('markdown') + '</span><span class="btn-txt">کپی با فرمت مارکداون</span>' +
+      '        </button>' +
+      '        <button class="btn btn-glass copy-btn' + (currentFmt === 'xml' ? ' btn-active-fmt' : '') + '" data-act="copy" data-fmt="xml" title="کپی با تگ‌های ساختاریافته XML">' +
+      '          <span class="btn-ic">' + ic('code') + '</span><span class="btn-txt">کپی با فرمت XML</span>' +
+      '        </button>' +
+      '      </div>' +
+      '    </div>' +
+      '    <div class="actions secondary-actions">' +
+      '      <button class="btn btn-glass small" data-act="save">' + ic('save') + '<span>ذخیره در این دستگاه</span></button>' +
+      (c.link ? '      <a class="btn btn-glass small" href="' + h(c.link) + '" target="_blank" rel="noopener noreferrer">' + ic('out') + '<span>باز کردن Gem</span></a>' : '') +
+      (app ? '      <a class="btn btn-glass small" href="' + h(app.url) + '" target="_blank" rel="noopener noreferrer">' + ic('out') + '<span>باز کردن ' + h(app.name) + '</span></a>' : '') +
+      '    </div>' +
+      '  </div></section>' +
+      '</div>';
 
     main.innerHTML = html;
     autosize(main);
@@ -1230,23 +813,40 @@
   }
   function viewBrand() {
     document.title = 'برند من · بانک پرامپت';
-    var filledCount = ['role', 'audience', 'tone', 'voice_doc', 'brand_colors'].filter(function (k) { return !E.isEmpty(S.profile[k]); }).length;
-    var statusText = filledCount === 5 ? 'پروفایل برند شما کامل است ✓' : fa(filledCount) + ' از ۵ بخش اصلی پر شده است';
+    var prof = S.profile || {};
+    var hasIdentity = Boolean(prof.business || prof.role || prof.audience);
+    var hasVoice = Boolean(prof.tone || prof.voice_use || prof.voice_avoid);
+    var statusText = (hasIdentity && hasVoice) ? 'مشخصات برند شما آماده و ذخیره شده است ✓' : 'مشخصات برند را بنویسید و سپس دکمه‌ی ذخیره را بزنید.';
 
-    var html = '<section class="hero"><div class="eyebrow">یک بار بنویسید · ' + statusText + '</div>' +
-      '<h1>برند من</h1><p>هر چه اینجا بنویسید، در پرامپت‌های مرتبط به‌طور خودکار می‌نشیند و کار شما را سریع و یکدست می‌کند.</p>' +
-      '<div class="personas">نمونه‌های آماده‌ی کارگاه: ' + Object.keys(B.personas).filter(function (k) { return k !== '_note'; }).map(function (k) {
-        return '<button class="link-btn" data-act="persona" data-p="' + k + '">' + h(B.personas[k].name) + ' (' + h(B.personas[k].desc) + ')</button>';
-      }).join('') + '</div></section>';
+    var html = '<section class="hero"><div class="eyebrow">یک بار ذخیره کنید · روی همین دستگاه</div>' +
+      '<h1>برند من (هویت و لحن کلامی شما)</h1>' +
+      '<p>مشخصات تخصص، مخاطب و لحن کاری خود را در کادرهای زیر بنویسید و دکمه‌ی «ذخیره اطلاعات برند» را بزنید. این مشخصات در تمام پرامپت‌ها می‌نشیند و دیگر نیازی به تکرار ندارید.</p>' +
+      '<div class="brand-presets-row">' +
+      '  <span class="bpr-title">نمونه‌های آماده‌ی کارگاه:</span>' +
+      '  <button class="btn btn-line small" data-act="persona" data-p="sara">🌱 سارا (روان‌درمانگر)</button>' +
+      '  <button class="btn btn-line small" data-act="persona" data-p="reza">☕ رضا (کسب‌وکار و فروشگاه)</button>' +
+      '  <button class="btn btn-line small" data-act="persona" data-p="mina">🎓 مینا (مشاور آموزشی)</button>' +
+      '</div></section>';
+
+    // دکمه ذخیره اول (بالای فرم)
+    html += '<div class="brand-save-card">' +
+      '  <button type="button" class="btn btn-gold btn-save-brand" data-act="save-brand">' + ic('save') + '<span>ذخیره اطلاعات برند من روی این دستگاه</span></button>' +
+      '  <div class="brand-save-status" id="brand-save-status">' + statusText + '</div>' +
+      '</div>';
 
     B.brand.sections.forEach(function (s) {
+      if (s.id === 'extra') {
+        html += '<details class="panel extra-brand-section"><summary><b>' + h(s.title) + '</b> <span class="muted">(' + h(s.sub) + ')</span></summary>' +
+          '<div class="extra-brand-content">' + s.fields.map(brandField).join('') + '</div></details>';
+        return;
+      }
       html += '<section class="panel bsec"><div class="panel-head"><h2>' + h(s.title) + '</h2>' +
         (s.helper ? '<a class="link-btn" href="#/p/' + s.helper + '">ساختن خودکار از نمونه‌های من</a>' : '') + '</div>' +
         '<p class="sub">' + h(s.sub) + '</p>' + s.fields.map(brandField).join('');
       if (s.id === 'brand') html += '<div class="swatches" id="sw"></div><div class="swatch-hint">برای کپی کردن کد هر رنگ، روی آن کلیک کنید.</div>';
       if (s.note) html += '<p class="note">' + h(s.note) + '</p>';
       if (s.compose) {
-        html += '<div class="paper composed"><div class="paper-head"><b>' + h(s.title) + ' آماده</b><span>برای قرار دادن در دانش Gem، Project یا دستور سفارشی</span></div>' +
+        html += '<div class="paper composed"><div class="paper-head"><b>' + h(s.title) + ' آماده</b><span>برای قرار دادن در دانش Gem یا دستور سفارشی</span></div>' +
           '<div class="prompt" id="c_' + s.compose + '"></div>' +
           '<div class="copy-section">' +
           '  <div class="copy-grid">' +
@@ -1258,6 +858,13 @@
       }
       html += '</section>';
     });
+
+    // دکمه ذخیره دوم (پایین فرم)
+    html += '<div class="brand-save-card bottom-save">' +
+      '  <button type="button" class="btn btn-gold btn-save-brand" data-act="save-brand">' + ic('save') + '<span>ذخیره اطلاعات برند من روی این دستگاه</span></button>' +
+      '  <div class="brand-save-status">اطلاعات روی همین مرورگر ماندگار می‌شود و در تمام پرامپت‌ها قرار می‌گیرد.</div>' +
+      '</div>';
+
     html += '<div class="row" style="margin-top:24px;"><button class="link-btn muted" data-act="wipe">پاک کردن همه‌ی داده‌های برند و فرم‌ها از این دستگاه</button></div>' + footHtml();
     main.innerHTML = html;
     autosize(main);
@@ -1428,78 +1035,26 @@
       return;
     }
 
-    if (act === 'switch-ws') {
-      var wsKey = el.getAttribute('data-ws') || 'all';
-      home.ws = wsKey;
-      var targetWs = WORKSPACES[wsKey];
-      if (targetWs && targetWs.persona) {
-        S.activePersona = targetWs.persona;
-        persist();
-      }
-      history.replaceState(null, '', wsKey === 'all' ? '#/' : '#/?ws=' + wsKey);
-      viewHome(parse());
-      return;
-    }
-
-    if (act === 'magic-run') {
-      var k = el.getAttribute('data-key');
-      var inp = $('#magic-input');
-      var userTopic = inp ? inp.value : '';
-      var res = runMagicPrompt(k, userTopic);
-      if (res) {
-        var box = $('#magic-output-container');
-        if (box) {
-          box.innerHTML = magicOutputHtml(res);
-          box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    if (act === 'save-brand') {
+      $$('[data-b]').forEach(function (inp) {
+        var bk = inp.getAttribute('data-b');
+        if (inp.hasAttribute('data-r')) {
+          var rIdx = +inp.getAttribute('data-r');
+          if (!Array.isArray(S.profile[bk])) S.profile[bk] = [];
+          S.profile[bk][rIdx] = inp.value;
+        } else {
+          S.profile[bk] = inp.value;
         }
-        toast('🚀 پرامپت غول‌پیکر با موفقیت تولید شد');
-      }
-      return;
-    }
-
-    if (act === 'magic-close') {
-      currentMagicResult = null;
-      var box = $('#magic-output-container');
-      if (box) box.innerHTML = '';
-      return;
-    }
-
-    if (act === 'magic-fmt') {
-      var fmt = el.getAttribute('data-fmt');
-      if (currentMagicResult) {
-        currentMagicResult.fmt = fmt;
-        currentFmt = fmt;
-        S.fmt = fmt;
-        persist();
-        var box = $('#magic-output-container');
-        if (box) box.innerHTML = magicOutputHtml(currentMagicResult);
-      }
-      return;
-    }
-
-    if (act === 'magic-copy') {
-      if (currentMagicResult) {
-        var txt = currentMagicResult[currentMagicResult.fmt] || currentMagicResult.text;
-        copyText(txt).then(function (ok) {
-          if (ok) toast('✓ پرامپت غول‌پیکر در کلیپ‌بورد کپی شد');
-          else toast('کپی خودکار نشد؛ لطفاً متن را دستی انتخاب و کپی کنید');
-        });
-      }
-      return;
-    }
-
-    if (act === 'apply-chip') {
-      var k = el.getAttribute('data-k');
-      var val = el.getAttribute('data-val');
-      var inputEl = $('#f_' + k) || $('[data-k="' + k + '"]');
-      if (inputEl) {
-        var cur = (inputEl.value || '').trim();
-        if (!cur) inputEl.value = val;
-        else if (cur.indexOf(val) < 0) inputEl.value = cur + '، ' + val;
-        var ev = new Event('input', { bubbles: true });
-        inputEl.dispatchEvent(ev);
-        toast('پیشنهاد افزوده شد');
-      }
+      });
+      composeBrand();
+      persist();
+      refreshBrand();
+      var statEls = $$('.brand-save-status');
+      statEls.forEach(function (st) {
+        st.textContent = '✓ اطلاعات برند شما با موفقیت ذخیره شد و در پرامپت‌ها فعال است.';
+        st.classList.add('saved-active');
+      });
+      toast('💾 اطلاعات برند شما با موفقیت ذخیره شد');
       return;
     }
 
@@ -1521,56 +1076,6 @@
       S.brandInject = el.checked;
       persist();
       if (c) refresh(c);
-      return;
-    }
-
-    if (act === 'switch-persona') {
-      var targetP = el.getAttribute('data-p') || null;
-      S.activePersona = targetP;
-      persist();
-      if (c) {
-        c.fields.forEach(function (f) {
-          if (f.profile) {
-            var prof = getActiveProfile();
-            if (prof[f.profile] !== undefined) {
-              var o = own(c);
-              o[f.key] = f.profile === 'voice_doc' ? (prof.voice_doc || '') : (prof[f.profile] || '');
-            }
-          }
-        });
-        viewPrompt(r);
-        var pDisplayName = targetP && B.personas && B.personas[targetP] ? B.personas[targetP].name : 'برند من';
-        toast('لحن به «' + pDisplayName + '» تغییر یافت');
-      }
-      return;
-    }
-
-    if (act === 'reset-field-brand') {
-      var k = el.getAttribute('data-k');
-      var profKey = el.getAttribute('data-p');
-      var prof = getActiveProfile();
-      var o = own(c);
-      o[k] = profKey === 'voice_doc' ? (prof.voice_doc || '') : (prof[profKey] || '');
-      persist();
-      viewPrompt(r);
-      toast('فیلد با متن برند بازنشانی شد');
-      return;
-    }
-
-    if (act === 'save-field-brand') {
-      var k = el.getAttribute('data-k');
-      var profKey = el.getAttribute('data-p');
-      var f = c.fields.find(function (x) { return x.key === k; });
-      var curVal = value(c, f);
-      if (S.activePersona && B.personas && B.personas[S.activePersona]) {
-        B.personas[S.activePersona].profile[profKey] = curVal;
-      } else {
-        S.profile[profKey] = curVal;
-      }
-      composeBrand();
-      persist();
-      viewPrompt(r);
-      toast('تغییرات در مشخصات برند ذخیره شد ✓');
       return;
     }
 
@@ -1610,20 +1115,6 @@
       var sCard = byId[sItem.id];
       var sFormatted = E.formatPrompt(sItem.text, sCard, sFmt);
       sFormatted = injectBrandToText(sFormatted, sCard, sFmt);
-
-      copyText(sFormatted).then(function (ok) {
-        var fmtName = sFmt === 'xml' ? 'فرمت XML' : (sFmt === 'markdown' ? 'فرمت مارکداون' : 'متن پرامپت');
-        toast(ok ? fmtName + ' کپی شد' : 'کپی انجام نشد');
-      });
-      return;
-    }
-
-    if (act === 'scopy') {
-      var sIdx = +el.getAttribute('data-i');
-      var sItem = S.saved[sIdx];
-      var sFmt = el.getAttribute('data-fmt') || 'text';
-      var sCard = byId[sItem.id];
-      var sFormatted = E.formatPrompt(sItem.text, sCard, sFmt);
 
       copyText(sFormatted).then(function (ok) {
         var fmtName = sFmt === 'xml' ? 'فرمت XML' : (sFmt === 'markdown' ? 'فرمت مارکداون' : 'متن پرامپت');
@@ -1741,10 +1232,6 @@
         qi.value = ''; home.q = ''; results();
         var clr = $('#q-clear'); if (clr) clr.style.display = 'none';
       }
-    } else if (e.key === 'Enter' && e.target && e.target.id === 'magic-input') {
-      e.preventDefault();
-      var btn = $('[data-act="magic-run"][data-key="auto"]');
-      if (btn) btn.click();
     }
   });
 
